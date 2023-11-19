@@ -33,7 +33,7 @@ This Python script is designed to create EPUB files from stories on the [fiction
 2. Install dependencies:
 
 ```bash
-   pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 3. Download and install the [Chrome WebDriver](https://sites.google.com/chromium.org/driver/).
@@ -43,7 +43,7 @@ This Python script is designed to create EPUB files from stories on the [fiction
 1. Run the script:
 
 ```bash
-   python fiction_live_epub_generator.py
+python fiction_live_epub_generator.py
 ```
 
 2. Enter the story URL(s) when prompted.
@@ -55,5 +55,5 @@ This Python script is designed to create EPUB files from stories on the [fiction
 ## Example
 
 ```bash
-   python fiction_live_epub_generator.py
+python fiction_live_epub_generator.py
 ```
