@@ -26,7 +26,7 @@ This Python script is designed to create EPUB files from stories on the [fiction
 
 1. Clone the repository:
 
-   git clone https://github.com/your-username/fiction-live-epub-generator.git
+   git clone https://github.com/WinterPhoenix-602/Fiction.live-Web-Scraping/
 
 2. Install dependencies:
 
