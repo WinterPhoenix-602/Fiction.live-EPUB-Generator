@@ -417,7 +417,7 @@ def save_book(book, dir_path):
     print("Writing EPUB file...")
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
-    print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}.")
+    print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}")
 
 def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
