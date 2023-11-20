@@ -134,16 +134,6 @@ def create_book(book_properties, chapter_elements, appendix_elements):
     book.add_item(epub.EpubNav()) # Add the navigation
     book.toc += (epub.Link(f"title.xhtml", 'Title Page', f"Title Page"),)  # Add the chapter to the table of contents
 
-    """# Download the cover image
-    print("Downloading cover image...")
-    cover_image = requests.get(book_properties['cover_image']) # Get the cover image
-
-    # Open a file for writing and save the image
-    with open('cover.jpg', 'wb') as file:
-        file.write(cover_image.content)
-    
-    book.set_cover("cover.jpg", cover_image.content) # Set the cover image"""
-
     chapters_dict, appendix_dict = download_chapters(chapter_elements, appendix_elements) # Download the chapters
 
     book = format_chapters(book, chapters_dict, appendix_dict) # Format the chapters
@@ -445,7 +435,7 @@ def save_book(book, dir_path):
     epub_path = os.path.join(dir_path, f"{book_title.replace(' ', '_')}.epub")
 
     # Check if the book title contains invalid characters
-    epub_path = validate_filename(book, dir_path, book_title)
+    epub_path = validate_filename(book, dir_path, epub_path, book_title)
 
     # Write the EPUB file to the specified directory
     print("Writing EPUB file...")
@@ -453,7 +443,7 @@ def save_book(book, dir_path):
         epub.write_epub(epub_file, book)
     print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}.")
 
-def validate_filename(book, dir_path, book_title):
+def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
     if any(char in invalid_chars for char in book_title):
         print("The book title contains invalid characters. Invalid characters will be replaced with '-'")
