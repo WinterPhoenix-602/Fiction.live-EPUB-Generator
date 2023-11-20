@@ -278,56 +278,32 @@ def exit_tags(chapters_dict, chapter):
         chunk.unwrap()
 
 
-# Function to remove unwanted elements
-def remove_elements(chapters_dict, chapter):
-    # Find chapter footers
-    footnotes = chapters_dict[chapter].find_all('footer')
-    # Remove chapter footers
-    for footnote in footnotes:
-        footnote.decompose()
-    # Find verified votes
-    verified_results = chapters_dict[chapter].find_all('span', class_="userVote hint--top")
-    # Remove verified votes
-    for result in verified_results:
-        result.decompose()
-    # Find crossed out options
-    xOut_options = chapters_dict[chapter].find_all('tr', class_="choiceItem xOut")
-    # Remove crossed out options
-    for option in xOut_options:
-        option.decompose()
-    # Find chapter comments
-    comments = chapters_dict[chapter].find_all('td', class_="icon discussChoice comment")
-    # Remove comments
-    for comment in comments:
-        comment.decompose()
-    # Find autoCloseContainers
-    auto_close_containers = chapters_dict[chapter].find_all('div', class_="autoCloseContainer")
-    # Remove autoCloseContainers
-    for auto_close_container in auto_close_containers:
-        auto_close_container.decompose()
-    # Find custom-choices
-    custom_choices = chapters_dict[chapter].find_all('div', class_="custom-choice")
-    # Remove custom-choices
-    for custom_choice in custom_choices:
-        custom_choice.decompose()
-    # Find editContainers
-    edit_containers = chapters_dict[chapter].find_all('div', class_="editContainer")
-    # Remove editContainers
-    for edit_container in edit_containers:
-        edit_container.decompose()
-    # Find reader suggestions
-    reader_suggestions = chapters_dict[chapter].find_all('div', class_="value")
-    # Remove Reader suggestions
-    for suggestion in reader_suggestions:
-        suggestion.parent.decompose()
-    # Find reader post boxes
-    reader_posts = chapters_dict[chapter].find_all('div', class_="readerPosts fieldBody")
-    # Remove empty reader post boxes
-    for box in reader_posts:
-        if len(box.contents) == 0:
-            box_title = box.previous
-            box.parent.decompose()
+def remove_element_by_selector(chapters_dict, chapter_key, selector, decompose_parent=False):
+    elements_to_remove = chapters_dict[chapter_key].select(selector)
+    for element in elements_to_remove:
+        if decompose_parent:
+            parent = element.find_parent()
+            parent.decompose()
+        else:
+            element.decompose()
 
+def remove_elements(chapters_dict, chapter_key):
+    # Define selectors for elements to remove
+    selectors = {
+        'footnotes': {'selector': 'footer', 'decompose_parent': False},
+        'verified_results': {'selector': 'span.userVote.hint--top', 'decompose_parent': False},
+        'xOut_options': {'selector': 'tr.choiceItem.xOut', 'decompose_parent': False},
+        'comments': {'selector': 'td.icon.discussChoice.comment', 'decompose_parent': False},
+        'auto_close_containers': {'selector': 'div.autoCloseContainer', 'decompose_parent': False},
+        'custom_choices': {'selector': 'div.custom-choice', 'decompose_parent': False},
+        'edit_containers': {'selector': 'div.editContainer', 'decompose_parent': False},
+        'reader_suggestions': {'selector': 'div.value', 'decompose_parent': True},
+        'empty_reader_posts': {'selector': 'div.readerPosts.fieldBody:empty', 'decompose_parent': True}
+    }
+
+    # Remove each type of element using defined selectors
+    for element_type, options in selectors.items():
+        remove_element_by_selector(chapters_dict, chapter_key, options['selector'], options['decompose_parent'])
 
 def find_polls(chapters_dict, chapter):
     return [table_element.parent for table_element in chapters_dict[chapter].find_all('table', class_='poll')]
@@ -467,8 +443,8 @@ def validate_filename(book, dir_path, epub_path, book_title):
 # The main function
 def main():  # sourcery skip: hoist-statement-from-loop
     # Get the URL(s) of the Table of Contents or Chapter
-    #story_urls = input("Enter Story URL(s): ")
-    story_urls = "https://fiction.live/stories/Shifting-The-Temporal-Tides/8J6NzhNiq7fE6XHnd" # Testing url 1
+    story_urls = input("Enter Story URL(s): ")
+    #story_urls = "https://fiction.live/stories/Shifting-The-Temporal-Tides/8J6NzhNiq7fE6XHnd" # Testing url 1
     #story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
     story_urls = story_urls.split(" ") if " " in story_urls else [story_urls]
     # Check if the URL(s) is/are valid
