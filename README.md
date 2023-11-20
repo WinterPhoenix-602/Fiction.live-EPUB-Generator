@@ -55,5 +55,6 @@ python fiction_live_epub_generator.py
 ## Example
 
 ```bash
-python fiction_live_epub_generator.py
+python FictionLiveScraper.py
+Enter Story URL(s): https://fiction.live/stories/Example-Story/Example-Story-ID https://fiction.live/stories//Example-Story-ID2
 ```
