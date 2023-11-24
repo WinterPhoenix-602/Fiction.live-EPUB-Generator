@@ -1,0 +1,4 @@
+beautifulsoup4==4.10.0
+EbookLib==0.17.1
+selenium==3.141.0
+colorama==0.4.4
