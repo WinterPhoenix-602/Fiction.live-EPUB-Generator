@@ -119,8 +119,8 @@ def create_book(book_properties, chapter_elements, appendix_elements):
                                 <link href="stylesheet.css" type="text/css" rel="stylesheet" />
                             </head>
                             <body class="fff_titlepage">
-                                <h3><a href="{book_properties["story_link"]}">{book_properties["title"]}</a> by <a class="authorlink"'
-                                        f'href="{book_properties["author_link"]}">{book_properties["author"]}</a></h3>
+                                <h3><a href="{book_properties["story_link"]}">{book_properties["title"]}</a> by <a class="authorlink"
+                                        href="{book_properties["author_link"]}">{book_properties["author"]}</a></h3>
                                 <div>
                                     <b>Status:</b> {book_properties["status"]}<br />
                                     <b>Published:</b> {book_properties["published"]}<br />
