@@ -9,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from colorama import Fore, Style
 import time
 from bs4 import Tag
@@ -22,7 +23,7 @@ def validate_urls(urls):
     """
     # Regular expression pattern to match valid URLs
     pattern1 = r"^https://fiction\.live/stories//[A-Za-z0-9]+"
-    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/([A-Za-z0-9]+)(/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/[A-Za-z0-9]+)?"
+    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)+)/([A-Za-z0-9]+)(/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/[A-Za-z0-9]+)?"
 
     valid_urls = []
     invalid_urls = []
@@ -88,7 +89,11 @@ def get_book_info(url):
     if home_chapter:
         chapter_elements.insert(0, home_chapter)
 
-    appendix_elements = toc_soup.find("div", class_="ng-scope").find_all("a", class_="ng-scope")
+    appendix = toc_soup.find("div", class_="ng-scope")
+    if appendix:
+        appendix_elements = appendix.find_all("a", class_="ng-scope")
+    else:
+        appendix_elements = []
 
     driver.quit()
 
@@ -151,8 +156,12 @@ def download_chapters(chapter_links, appendix_links):
     for count, chapter in enumerate(chapter_links):
         driver.get(f"https://fiction.live/{chapter.get('href')}") # Get the chapter page
         element_locator = (By.XPATH, "//span[text()='New Comment']") # Set the element locator
-        wait =WebDriverWait(driver, 30)
-        element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+        try:
+            wait =WebDriverWait(driver, 30)
+            element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+        except TimeoutException:
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.{Style.RESET_ALL}\n\t{chapter.text} could not be downloaded.")
+            continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
         while True:
@@ -191,8 +200,12 @@ def download_chapters(chapter_links, appendix_links):
     for count, appendix in enumerate(appendix_links):
         driver.get(f"https://fiction.live/{appendix.get('href')}") # Get the appendix page
         element_locator = (By.XPATH, "//a[@class='expandComments showWhenDiscussionOpened']") # Set the element locator
-        wait =WebDriverWait(driver, 30)
-        element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+        try:
+            wait =WebDriverWait(driver, 30)
+            element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+        except TimeoutException:
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.{Style.RESET_ALL}\n\t{appendix.text} could not be downloaded.")
+            continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
         while True:
