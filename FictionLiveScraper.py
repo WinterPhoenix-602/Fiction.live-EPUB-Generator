@@ -48,12 +48,17 @@ def validate_urls(urls):
 # Function to get the Table of Contents
 def get_book_info(url):
     driver = webdriver.Chrome()
+    driver.minimize_window() # Minimize the browser window
+
     wait = WebDriverWait(driver, 30)
     driver.get(url)
 
     # Wait for the Table of Contents to load
     element_locator = (By.CLASS_NAME, "contentsInner")
-    element = wait.until(EC.presence_of_element_located(element_locator))
+    try:
+        element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+    except TimeoutException:
+        print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\tStory at {url} could not be found.{Style.RESET_ALL}")
 
     # Get the Table of Contents
     toc_element = driver.find_element(By.CLASS_NAME, "contentsInner")
@@ -153,6 +158,7 @@ def download_chapters(chapter_links, appendix_links):
     print("Downloading chapters...")
     chapters_dict = {}
     driver = webdriver.Chrome() # Create a Chrome driver
+    driver.minimize_window() # Minimize the browser window
     for count, chapter in enumerate(chapter_links):
         driver.get(f"https://fiction.live/{chapter.get('href')}") # Get the chapter page
         element_locator = (By.XPATH, "//span[text()='New Comment']") # Set the element locator
@@ -160,7 +166,7 @@ def download_chapters(chapter_links, appendix_links):
             wait =WebDriverWait(driver, 30)
             element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
         except TimeoutException:
-            print(f"{Fore.RED}Error: The required element did not load within the specified time.{Style.RESET_ALL}\n\t{chapter.text} could not be downloaded.")
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{chapter.text} could not be downloaded.{Style.RESET_ALL}")
             continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
@@ -204,7 +210,7 @@ def download_chapters(chapter_links, appendix_links):
             wait =WebDriverWait(driver, 30)
             element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
         except TimeoutException:
-            print(f"{Fore.RED}Error: The required element did not load within the specified time.{Style.RESET_ALL}\n\t{appendix.text} could not be downloaded.")
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{appendix.text} could not be downloaded.{Style.RESET_ALL}")
             continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
