@@ -22,8 +22,8 @@ def validate_urls(urls):
     If there are no valid URLs, a message is displayed and the program is exited.
     """
     # Regular expression pattern to match valid URLs
-    pattern1 = r"^https://fiction\.live/stories//[A-Za-z0-9]+"
-    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)+)/([A-Za-z0-9]+)(/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/[A-Za-z0-9]+)?"
+    pattern1 = r"^https://fiction\.live/stories//[A-Za-z0-9]{17}"
+    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)+)/([A-Za-z0-9]{17})(/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/[A-Za-z0-9]+)?"
 
     valid_urls = []
     invalid_urls = []
