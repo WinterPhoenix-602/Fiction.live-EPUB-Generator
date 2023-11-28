@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import os
 import string
 from ebooklib import epub
+import sys
 import re
 import datetime
 from selenium import webdriver
@@ -48,10 +49,10 @@ def validate_urls(urls):
 # Function to get the Table of Contents
 def get_book_info(url):
     driver = webdriver.Chrome()
-    driver.minimize_window() # Minimize the browser window
 
     wait = WebDriverWait(driver, 30)
     driver.get(url)
+    driver.minimize_window() # Minimize the browser window
 
     # Wait for the Table of Contents to load
     element_locator = (By.CLASS_NAME, "contentsInner")
@@ -106,8 +107,8 @@ def get_book_info(url):
     return book_properties, chapter_elements, appendix_elements
 
 # Function to create the EPUB file
-def create_book(book_properties, chapter_elements, appendix_elements):
-    print("Creating book...")
+def create_book(book_properties, chapter_elements, appendix_elements, book_number, total_books):
+    print(f"Creating book... {book_number}/{total_books}")
     book = epub.EpubBook() # Create the book
 
     # Set metadata properties
@@ -154,20 +155,25 @@ def create_book(book_properties, chapter_elements, appendix_elements):
 
     return book
 
+# Function to print messages with carriage return for loading effect
+def print_loading(message):
+    sys.stdout.write('\r' + message)
+    sys.stdout.flush()
+
 # Function to download the chapters
 def download_chapters(chapter_links, appendix_links):
     print("Downloading chapters...")
     chapters_dict = {}
     driver = webdriver.Chrome() # Create a Chrome driver
-    driver.minimize_window() # Minimize the browser window
     for count, chapter in enumerate(chapter_links):
         driver.get(f"https://fiction.live/{chapter.get('href')}") # Get the chapter page
+        driver.minimize_window() # Minimize the browser window
         element_locator = (By.XPATH, "//span[text()='New Comment']") # Set the element locator
         try:
             wait =WebDriverWait(driver, 30)
             element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
         except TimeoutException:
-            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{chapter.text} could not be downloaded.{Style.RESET_ALL}")
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{chapter.text} could not be downloaded.{Style.RESET_ALL}\n")
             continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
@@ -197,12 +203,12 @@ def download_chapters(chapter_links, appendix_links):
         chapter_content.insert(0, title_tag)
         # Add the chapter to the dictionary
         chapters_dict[chapter_title] = chapter_content
-        print(f"Chapter {count+1}/{len(chapter_links)} downloaded.")
+        print_loading(f"Chapter {count+1}/{len(chapter_links)} downloaded.")
         
         """COMMENT OUT TO STOP TESTING"""
         #break
 
-    print("Downloading appendix...")
+    print("\nDownloading appendix...")
     appendix_dict = {}
     for count, appendix in enumerate(appendix_links):
         driver.get(f"https://fiction.live/{appendix.get('href')}") # Get the appendix page
@@ -211,7 +217,7 @@ def download_chapters(chapter_links, appendix_links):
             wait =WebDriverWait(driver, 30)
             element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
         except TimeoutException:
-            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{appendix.text} could not be downloaded.{Style.RESET_ALL}")
+            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{appendix.text} could not be downloaded.{Style.RESET_ALL}\n")
             continue
 
         # Continually scroll to the bottom of the page until no more new elements are loading
@@ -247,7 +253,7 @@ def download_chapters(chapter_links, appendix_links):
         appendix_content.insert(0, title_tag)
         # Add the appendix to the dictionary
         appendix_dict[appendix_title] = appendix_content
-        print(f"Appendix entry {count+1}/{len(appendix_links)} downloaded.")
+        print_loading(f"Appendix entry {count+1}/{len(appendix_links)} downloaded.")
         
         """COMMENT OUT TO STOP TESTING"""
         #break
@@ -258,7 +264,7 @@ def download_chapters(chapter_links, appendix_links):
         
 # Function to format the chapters
 def format_chapters(book, chapters_dict, appendix_dict):
-    print("Formatting chapters...")
+    print("\nFormatting chapters...")
     # Loop through the chapters
     for count, chapter in enumerate(chapters_dict):
         remove_elements(chapters_dict, chapter) # Remove unwanted elements
@@ -272,9 +278,9 @@ def format_chapters(book, chapters_dict, appendix_dict):
         formatted_chapter.content = chapter_content  # Set the chapter content
         book.add_item(formatted_chapter)  # Add formatted chapter to the book
         book.toc += (epub.Link(f"chap_{count+1}.xhtml", chapter, f"{chapter}"),)  # Add the chapter to the table of contents
-        print(f"Chapter {count+1}/{len(chapters_dict)} formatted.")
+        print_loading(f"Chapter {count+1}/{len(chapters_dict)} formatted.")
         
-    print("Formatting appendix...")
+    print("\nFormatting appendix...")
     for count, entry in enumerate(appendix_dict):
         remove_elements(appendix_dict, entry) # Remove unwanted elements
         exit_tags(appendix_dict, entry) # Exit unneeded tags
@@ -282,7 +288,7 @@ def format_chapters(book, chapters_dict, appendix_dict):
         formatted_entry.content = appendix_dict[entry].encode("utf-8") # Set the chapter content
         book.add_item(formatted_entry) # Add formatted chapter to the book
         book.toc += (epub.Link(f"appendix_{count+1}.xhtml", entry, f"{entry}"),) # Add the chapter to the table of contents
-        print(f"Appendix entry {count+1}/{len(appendix_dict)} formatted.")
+        print_loading(f"Appendix entry {count+1}/{len(appendix_dict)} formatted.")
     return book
 
 def exit_tags(chapters_dict, chapter):
@@ -434,7 +440,7 @@ def save_book(book, dir_path):
     epub_path = validate_filename(book, dir_path, epub_path, book_title)
 
     # Write the EPUB file to the specified directory
-    print("Writing EPUB file...")
+    print("\nWriting EPUB file...")
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
     print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}")
@@ -442,7 +448,7 @@ def save_book(book, dir_path):
 def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
     if any(char in invalid_chars for char in book_title):
-        print("The book title contains invalid characters. Invalid characters will be replaced with '-'")
+        print("\nThe book title contains invalid characters. Invalid characters will be replaced with '-'")
         new_title = "".join(["-" if char in invalid_chars else char for char in book_title])
         epub_path = os.path.join(dir_path, f"{new_title.replace(' ', '_')}.epub")
         book.set_title(new_title)
@@ -485,11 +491,11 @@ def main():  # sourcery skip: hoist-statement-from-loop
             break
 
     # Loop through the URLs and create an EPUB file for each one
-    for url in story_urls:
+    for count, url in enumerate(story_urls):
         book_properties, chapter_elements, appendix_elements = get_book_info(url)
         if book_properties == None:
             continue
-        book = create_book(book_properties, chapter_elements, appendix_elements)
+        book = create_book(book_properties, chapter_elements, appendix_elements, count+1, len(story_urls))
         save_book(book, dir_path)
         del book
 
