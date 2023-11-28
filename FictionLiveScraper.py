@@ -14,6 +14,10 @@ from selenium.common.exceptions import TimeoutException
 from colorama import Fore, Style
 import time
 from bs4 import Tag
+import logging
+
+# Set Selenium's logging level to WARNING
+logging.getLogger('selenium').setLevel(logging.WARNING)
 
 # Function to validate URL(s)
 def validate_urls(urls):
@@ -48,9 +52,13 @@ def validate_urls(urls):
 
 # Function to get the Table of Contents
 def get_book_info(url):
-    driver = webdriver.Chrome()
-
+    # Set up the Chrome WebDriver without displaying DevTools messages
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--log-level=3")  # 3 corresponds to WARNING level
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = webdriver.Chrome(options=chrome_options)
     wait = WebDriverWait(driver, 30)
+
     driver.get(url)
     driver.minimize_window() # Minimize the browser window
 
@@ -164,7 +172,12 @@ def print_loading(message):
 def download_chapters(chapter_links, appendix_links):
     print("Downloading chapters...")
     chapters_dict = {}
-    driver = webdriver.Chrome() # Create a Chrome driver
+    # Set up the Chrome WebDriver without displaying DevTools messages
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--log-level=3")  # 3 corresponds to WARNING level
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = webdriver.Chrome(options=chrome_options)
+
     for count, chapter in enumerate(chapter_links):
         driver.get(f"https://fiction.live/{chapter.get('href')}") # Get the chapter page
         driver.minimize_window() # Minimize the browser window
@@ -207,56 +220,57 @@ def download_chapters(chapter_links, appendix_links):
         
         """COMMENT OUT TO STOP TESTING"""
         #break
-
-    print("\nDownloading appendix...")
+    
     appendix_dict = {}
-    for count, appendix in enumerate(appendix_links):
-        driver.get(f"https://fiction.live/{appendix.get('href')}") # Get the appendix page
-        element_locator = (By.XPATH, "//a[@class='expandComments showWhenDiscussionOpened']") # Set the element locator
-        try:
-            wait =WebDriverWait(driver, 30)
-            element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
-        except TimeoutException:
-            print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{appendix.text} could not be downloaded.{Style.RESET_ALL}\n")
-            continue
+    if len(appendix_links) > 0:
+        print("\nDownloading appendix...")
+        for count, appendix in enumerate(appendix_links):
+            driver.get(f"https://fiction.live/{appendix.get('href')}") # Get the appendix page
+            element_locator = (By.XPATH, "//a[@class='expandComments showWhenDiscussionOpened']") # Set the element locator
+            try:
+                wait =WebDriverWait(driver, 30)
+                element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
+            except TimeoutException:
+                print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\t{appendix.text} could not be downloaded.{Style.RESET_ALL}\n")
+                continue
 
-        # Continually scroll to the bottom of the page until no more new elements are loading
-        while True:
-            old_page = driver.page_source
-            appendix_soup = BeautifulSoup(old_page, 'html.parser') # Create a BeautifulSoup object
-            # Get the chapter content
-            old_appendix_content = appendix_soup.find('div', id="storyPosts")
-            old_appendix_content = old_appendix_content.find('div', class_="jadeRepeat ng-scope")
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1) # Wait for any new elements to load
-            new_page = driver.page_source
-            appendix_soup = BeautifulSoup(new_page, 'html.parser') # Create a BeautifulSoup object
-            # Get the chapter content
-            appendix_content = appendix_soup.find('div', id="storyPosts")
-            appendix_content = appendix_content.find('div', class_="jadeRepeat ng-scope")
-            if old_appendix_content == appendix_content: # If no new elements loaded, break the loop
-                break
+            # Continually scroll to the bottom of the page until no more new elements are loading
+            while True:
+                old_page = driver.page_source
+                appendix_soup = BeautifulSoup(old_page, 'html.parser') # Create a BeautifulSoup object
+                # Get the chapter content
+                old_appendix_content = appendix_soup.find('div', id="storyPosts")
+                old_appendix_content = old_appendix_content.find('div', class_="jadeRepeat ng-scope")
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(1) # Wait for any new elements to load
+                new_page = driver.page_source
+                appendix_soup = BeautifulSoup(new_page, 'html.parser') # Create a BeautifulSoup object
+                # Get the chapter content
+                appendix_content = appendix_soup.find('div', id="storyPosts")
+                appendix_content = appendix_content.find('div', class_="jadeRepeat ng-scope")
+                if old_appendix_content == appendix_content: # If no new elements loaded, break the loop
+                    break
+                
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(1) # Wait for any new elements to load
+                new_page = driver.page_source
+                if old_page == new_page: # If no new elements loaded, break the loop
+                    break
+
+            # Get the appendix title
+            appendix_title = appendix.text.strip()
+            # Create a new tag to hold the chapter title
+            title_tag = appendix_soup.new_tag('h3')  # 'h1' for large text
+            title_tag.string = appendix_title
+            title_tag['style'] = 'font-weight: bold; text-align: center;'  # Make the text bold and centered
+            # Add the title tag to the top of the chapter content
+            appendix_content.insert(0, title_tag)
+            # Add the appendix to the dictionary
+            appendix_dict[f"Appendix: {appendix_title}"] = appendix_content
+            print_loading(f"Appendix entry {count+1}/{len(appendix_links)} downloaded.")
             
-            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(1) # Wait for any new elements to load
-            new_page = driver.page_source
-            if old_page == new_page: # If no new elements loaded, break the loop
-                break
-
-        # Get the appendix title
-        appendix_title = appendix.text.strip()
-        # Create a new tag to hold the chapter title
-        title_tag = appendix_soup.new_tag('h3')  # 'h1' for large text
-        title_tag.string = appendix_title
-        title_tag['style'] = 'font-weight: bold; text-align: center;'  # Make the text bold and centered
-        # Add the title tag to the top of the chapter content
-        appendix_content.insert(0, title_tag)
-        # Add the appendix to the dictionary
-        appendix_dict[appendix_title] = appendix_content
-        print_loading(f"Appendix entry {count+1}/{len(appendix_links)} downloaded.")
-        
-        """COMMENT OUT TO STOP TESTING"""
-        #break
+            """COMMENT OUT TO STOP TESTING"""
+            #break
 
     driver.quit()
 
@@ -280,15 +294,16 @@ def format_chapters(book, chapters_dict, appendix_dict):
         book.toc += (epub.Link(f"chap_{count+1}.xhtml", chapter, f"{chapter}"),)  # Add the chapter to the table of contents
         print_loading(f"Chapter {count+1}/{len(chapters_dict)} formatted.")
         
-    print("\nFormatting appendix...")
-    for count, entry in enumerate(appendix_dict):
-        remove_elements(appendix_dict, entry) # Remove unwanted elements
-        exit_tags(appendix_dict, entry) # Exit unneeded tags
-        formatted_entry = epub.EpubHtml(title=chapter, file_name=f"appendix_{count+1}.xhtml", lang="en") # Create the chapter
-        formatted_entry.content = appendix_dict[entry].encode("utf-8") # Set the chapter content
-        book.add_item(formatted_entry) # Add formatted chapter to the book
-        book.toc += (epub.Link(f"appendix_{count+1}.xhtml", entry, f"{entry}"),) # Add the chapter to the table of contents
-        print_loading(f"Appendix entry {count+1}/{len(appendix_dict)} formatted.")
+    if len(appendix_dict) > 0:
+        print("\nFormatting appendix...")
+        for count, entry in enumerate(appendix_dict):
+            remove_elements(appendix_dict, entry) # Remove unwanted elements
+            exit_tags(appendix_dict, entry) # Exit unneeded tags
+            formatted_entry = epub.EpubHtml(title=chapter, file_name=f"appendix_{count+1}.xhtml", lang="en") # Create the chapter
+            formatted_entry.content = appendix_dict[entry].encode("utf-8") # Set the chapter content
+            book.add_item(formatted_entry) # Add formatted chapter to the book
+            book.toc += (epub.Link(f"appendix_{count+1}.xhtml", entry, f"{entry}"),) # Add the chapter to the table of contents
+            print_loading(f"Appendix entry {count+1}/{len(appendix_dict)} formatted.")
     return book
 
 def exit_tags(chapters_dict, chapter):
@@ -443,12 +458,12 @@ def save_book(book, dir_path):
     print("\nWriting EPUB file...")
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
-    print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}")
+    print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}\n")
 
 def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
     if any(char in invalid_chars for char in book_title):
-        print("\nThe book title contains invalid characters. Invalid characters will be replaced with '-'")
+        print("\nThe book title contains invalid characters. Invalid characters will be replaced with '-'\r")
         new_title = "".join(["-" if char in invalid_chars else char for char in book_title])
         epub_path = os.path.join(dir_path, f"{new_title.replace(' ', '_')}.epub")
         book.set_title(new_title)
