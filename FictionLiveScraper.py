@@ -94,7 +94,7 @@ def get_book_info(url):
         'status': page_soup.find('span', class_="status").text.strip(),
         'content_rating': content_rating_tags[0].find('span').text.strip(),
         'word_count': content_rating_tags[2].find('span').get('data-hint').split()[0],
-        'summary': page_soup.find('div', class_="fieldBody").content,
+        'summary': page_soup.find('div', class_="fieldBody").content if page_soup.find('div', class_="fieldBody") else None,
         'tags': [tag.text.strip() for tag in page_soup.find_all('a', {'class': 'tag'})],
     }
 
