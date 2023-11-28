@@ -59,6 +59,7 @@ def get_book_info(url):
         element = wait.until(EC.presence_of_element_located(element_locator)) # Wait for the element to load
     except TimeoutException:
         print(f"{Fore.RED}Error: The required element did not load within the specified time.\n\tStory at {url} could not be found.{Style.RESET_ALL}")
+        return None, None, None
 
     # Get the Table of Contents
     toc_element = driver.find_element(By.CLASS_NAME, "contentsInner")
@@ -486,6 +487,8 @@ def main():  # sourcery skip: hoist-statement-from-loop
     # Loop through the URLs and create an EPUB file for each one
     for url in story_urls:
         book_properties, chapter_elements, appendix_elements = get_book_info(url)
+        if book_properties == None:
+            continue
         book = create_book(book_properties, chapter_elements, appendix_elements)
         save_book(book, dir_path)
         del book
