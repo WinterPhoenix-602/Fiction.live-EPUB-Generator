@@ -38,7 +38,9 @@ def validate_urls(urls):
         if re.match(pattern1, url): # If it is valid and in the correct format, append to valid urls
             valid_urls.append(url)
         elif re.match(pattern2, url): # If it is valid and in an incorrect format, convert and then append
-            valid_urls.append(f"https://fiction.live/stories//{re.match(pattern2, url).group(3)}")
+            valid_urls.append(
+                f"https://fiction.live/stories//{re.match(pattern2, url)[3]}"
+            )
         else: # If it is invalid, append to invalid urls and display
             invalid_urls.append(url)
             print(f"{Fore.RED}Invalid URL: {url}{Style.RESET_ALL}")
@@ -77,8 +79,7 @@ def get_book_info(url):
     # Get the book title, properties, and author
     page_soup = BeautifulSoup(driver.page_source, "html.parser")
     content_rating_tags = page_soup.find_all('span', class_="rating")
-    date_string = page_soup.find('span', class_='ut')
-    if date_string:
+    if date_string := page_soup.find('span', class_='ut'):
         date_string = date_string.text.strip().split("New")[0]
         date_obj = datetime.datetime.strptime(date_string, "%a, %b %d, %Y, %I:%M %p")
         formatted_date = date_obj.strftime("%Y-%m-%d")
@@ -99,13 +100,10 @@ def get_book_info(url):
     }
 
     chapter_elements = toc_soup.find_all("a", class_="ng-binding")
-    home_chapter = toc_soup.find("a", class_=None)
-
-    if home_chapter:
+    if home_chapter := toc_soup.find("a", class_=None):
         chapter_elements.insert(0, home_chapter)
 
-    appendix = toc_soup.find("div", class_="ng-scope")
-    if appendix:
+    if appendix := toc_soup.find("div", class_="ng-scope"):
         appendix_elements = appendix.find_all("a", class_="ng-scope")
     else:
         appendix_elements = []
@@ -152,7 +150,7 @@ def create_book(book_properties, chapter_elements, appendix_elements, book_numbe
     title_page.content = title_page_html.encode('utf-8') # Set the title page content
     book.add_item(title_page)
     book.add_item(epub.EpubNav()) # Add the navigation
-    book.toc += (epub.Link(f"title.xhtml", 'Title Page', f"Title Page"),)  # Add the chapter to the table of contents
+    book.toc += (epub.Link("title.xhtml", 'Title Page', "Title Page"),)  # Add the chapter to the table of contents
 
     chapters_dict, appendix_dict = download_chapters(chapter_elements, appendix_elements) # Download the chapters
 
@@ -313,8 +311,7 @@ def exit_tags(chapters_dict, chapter):
     for chunk in content:
         # Extract the content within the <div> tag
         content_div = chunk.find('div', class_='chapterContent')
-        content_fieldBody = content_div.find('div', class_='fieldBody')
-        if content_fieldBody:
+        if content_fieldBody := content_div.find('div', class_='fieldBody'):
             content_fieldBody.unwrap()
         chunk.unwrap()
 
@@ -343,7 +340,7 @@ def remove_elements(chapters_dict, chapter_key):
     }
 
     # Remove each type of element using defined selectors
-    for element_type, options in selectors.items():
+    for options in selectors.values():
         remove_element_by_selector(chapters_dict, chapter_key, options['selector'], options['decompose_parent'])
 
 def find_polls(chapters_dict, chapter):
@@ -494,7 +491,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
     # Get the directory where the EPUB file will be saved
     while True:
         #dir_path = input("Enter the directory where you want to save the EPUB file(s): ") # Get the directory path from the user
-        dir_path = "C:\\Users\\caide\\Desktop\\Personal Projects\\Epub Editing\\Fiction.live\\Epubs" # Test directory
+        dir_path = "C:\\Users\\caide\\Desktop\\Personal Projects\\Epub Editing\\Fiction.live\\Scraped" # Test directory
         # Check if the directory is valid
         try:
             if not os.path.isdir(dir_path):
@@ -508,7 +505,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
     # Loop through the URLs and create an EPUB file for each one
     for count, url in enumerate(story_urls):
         book_properties, chapter_elements, appendix_elements = get_book_info(url)
-        if book_properties == None:
+        if book_properties is None:
             continue
         book = create_book(book_properties, chapter_elements, appendix_elements, count+1, len(story_urls))
         save_book(book, dir_path)
