@@ -545,6 +545,36 @@ def create_book(book_data, book_number, total_books):
 
 # The main function
 def main():  # sourcery skip: hoist-statement-from-loop
+    r"""
+    Main function for creating EPUB files from story URLs.
+
+    Gets the URL(s) of the Table of Contents or Chapter from user input.
+    Splits the URL(s) into a list if multiple URLs are provided.
+    Validates the URL(s) to ensure they are valid.
+    Gets the directory where the EPUB file(s) will be saved from user input.
+    Loops through the URLs and creates an EPUB file for each one.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If the directory path is invalid.
+
+    Examples:
+        main()
+        Enter Story URL(s): https://fiction.live/stories/story-1/12345678912345678
+        Enter the directory where you want to save the EPUB file(s): C:\\Users\\username\\Desktop\\Folder
+        Creating book... 1/1
+        Downloading Chapters...
+        Chapter 26/26 downloaded.
+        Downloading Appendices...
+        Appendix 5/5 downloaded.
+        The book title contains invalid characters. Invalid characters will be replaced with '-'
+        Writing EPUB file...
+        EPUB file written to C:\Users\username\Desktop\Folder\story-1.epub"""
     # Get the URL(s) of the Table of Contents or Chapter
     story_urls = input("Enter Story URL(s): ")
     #story_urls = "https://fiction.live/stories/Shifting-The-Temporal-Tides/8J6NzhNiq7fE6XHnd" # Testing url 1
@@ -555,8 +585,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
 
     # Get the directory where the EPUB file will be saved
     while True:
-        #dir_path = input("Enter the directory where you want to save the EPUB file(s): ") # Get the directory path from the user
-        dir_path = "C:\\Users\\caide\\Desktop\\Personal Projects\\Epub Editing\\Fiction.live\\API" # Test directory
+        dir_path = input("Enter the directory where you want to save the EPUB file(s): ") # Get the directory path from the user
         # Check if the directory is valid
         try:
             if not os.path.isdir(dir_path):
