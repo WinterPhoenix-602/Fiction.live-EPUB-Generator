@@ -20,9 +20,18 @@ achievements = []
 # Function to validate URL(s)
 def validate_urls(urls):
     """
-    Accepts either a single string or list of strings as input, and validates those strings as valid story urls from the website fiction.live.
-    If a URL is not valid, then it is removed from the list and a message is displayed indicating such.
-    If there are no valid URLs, a message is displayed and the program is exited.
+    Validates a list of URLs and returns the valid ones along with their corresponding metadata URLs.
+
+    Args:
+        urls (list): A list of URLs to be validated.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary contains the valid story URL and its corresponding metadata URL.
+
+    Examples:
+        >>> urls = ["https://fiction.live/stories/1234567890abcdef", "https://fiction.live/stories/abcdefg/1234567890abcdef"]
+        >>> validate_urls(urls)
+        [{'story': 'https://fiction.live/stories//1234567890abcdef', 'meta': 'https://fiction.live/api/node/1234567890abcdef'}, ...]
     """
     # Regular expression pattern to match valid URLs
     pattern1 = r"^https://fiction\.live/stories//([A-Za-z0-9]{17})"
@@ -59,6 +68,21 @@ def validate_urls(urls):
     return valid_urls
 
 def get_book_info(metadata_url):
+    """
+    Retrieves the metadata of a story from the provided URL.
+
+    Args:
+        metadata_url (str): The URL of the story metadata.
+
+    Returns:
+        dict: The story metadata as a dictionary.
+
+    Examples:
+        >>> metadata_url = "https://fiction.live/api/anonkun/story/12345/metadata"
+        >>> get_book_info(metadata_url)
+        {'title': 'Story Title', 'author': 'Author Name', ...}
+    """
+
     if story_metadata := session.get(metadata_url).text:
         if story_metadata != "null":
             story_metadata = json.loads(story_metadata)
@@ -71,13 +95,36 @@ def get_book_info(metadata_url):
     print(f"{Fore.RED}Story does not exist: ({metadata_url})")
     return None
 
-
 def get_chapters_appendices_and_routes(book_data):
+    """
+    Retrieves the chapters, appendices, and routes from the provided book data.
+
+    Args:
+        book_data (dict): The book data containing chapters, appendices, and route metadata.
+
+    Returns:
+        tuple: A tuple containing three lists: chapters_list, appendices_list, and routes_list.
+
+    Examples:
+        >>> book_data = {'bm': [...], 'route_metadata': [...], ...}
+        >>> get_chapters_appendices_and_routes(book_data)
+        ([{'title': 'Chapter 1', 'url': 'https://fiction.live/api/anonkun/chapters/...'}, ...], [...], [...])
+    """
     chapters_list = []
     appendices_list = []
     routes_list = []
     def add_chapter_url(title, bounds, isAppendix = False):
-        "Adds a chapter url based on the start/end chunk-range timestamps."
+        """
+        Adds a chapter URL based on the start and end chunk-range timestamps.
+
+        Args:
+            title (str): The title of the chapter.
+            bounds (tuple): A tuple containing the start and end chunk-range timestamps.
+            isAppendix (bool, optional): Indicates whether the chapter is an appendix. Defaults to False.
+
+        Returns:
+            None
+        """
         start, end = bounds
         end -= 1
         chapter_url = f"https://fiction.live/api/anonkun/chapters/{book_data['_id']}/{start}/{end}/"
@@ -87,12 +134,34 @@ def get_chapters_appendices_and_routes(book_data):
         chapters_list.append({'title': title, 'url': chapter_url})
 
     def add_route_chapter_url(title, route_id):
-        "Adds a route chapter url based on the route id."
+        """
+        Adds a route chapter URL based on the provided route ID.
+
+        Args:
+            title (str): The title of the route chapter.
+            route_id (str): The ID of the route.
+
+        Returns:
+            None
+        """
         chapter_url = f"https://fiction.live/api/anonkun/route/{route_id}/chapters"
         routes_list.append({'title': title, 'url': chapter_url})
 
     def pair(iterable):
-        "[1,2,3,4] -> [(1, 2), (2, 3), (3, 4)]"
+        """
+        Pairs the elements of the provided iterable into consecutive tuples.
+
+        Args:
+            iterable (iterable): The iterable to be paired.
+
+        Returns:
+            list: A list of tuples, where each tuple contains two consecutive elements from the iterable.
+
+        Examples:
+            >>> iterable = [1, 2, 3, 4]
+            >>> pair(iterable)
+            [(1, 2), (2, 3), (3, 4)]
+        """
         a, b = itertools.tee(iterable, 2)
         next(b, None)
         return list(zip(a, b))
@@ -149,9 +218,20 @@ def parse_timestamp(timestamp):
     return datetime.fromtimestamp(timestamp / 1000.0, None)
 
 def make_soup(data):
-    '''
-    Convenience method for getting a bs4 soup.  bs3 has been removed.
-    '''
+    """
+    Creates a BeautifulSoup object from the provided HTML data.
+
+    Args:
+        data (str): The HTML data to be parsed.
+
+    Returns:
+        BeautifulSoup: The BeautifulSoup object representing the parsed HTML.
+
+    Examples:
+        >>> data = "<p>HTML content</p>"
+        >>> make_soup(data)
+        <BeautifulSoup object at 0x...>
+    """
 
     ## html5lib handles <noscript> oddly.  See:
     ## https://bugs.launchpad.net/beautifulsoup/+bug/1277464 This
@@ -172,9 +252,22 @@ def make_soup(data):
     return soup
 
 def format_chapter(chunk):
-    """Handles any formatting in the chapter body text for text chapters.
+    """
+    Formats the chapter body text in the provided chunk.
     In the 'default case' where we're getting boring chapter-chunk body text, just calls utf8fromSoup
-    and returns the text as is on the website."""
+    and returns the text as is on the website
+
+    Args:
+        chunk (dict): The chunk containing the chapter body text.
+
+    Returns:
+        str: The formatted chapter body text.
+
+    Examples:
+        >>> chunk = {'b': "<p>Chapter content</p>", ...}
+        >>> format_chapter(chunk)
+        "<p>Chapter content</p>"
+    """
 
     soup = make_soup(chunk['b'] if 'b' in chunk else "")
     soup = add_spoiler_legends(soup)
@@ -183,7 +276,20 @@ def format_chapter(chunk):
     return str(soup)
 
 def add_spoiler_legends(soup):
-    # find spoiler links and change link-anchor block to legend block
+    """
+    Adds spoiler legends to the provided BeautifulSoup object.
+
+    Args:
+        soup (BeautifulSoup): The BeautifulSoup object to modify.
+
+    Returns:
+        BeautifulSoup: The modified BeautifulSoup object with spoiler legends added.
+
+    Examples:
+        >>> soup = BeautifulSoup("<div><p>Content</p></div>", "html.parser")
+        >>> add_spoiler_legends(soup)
+        <BeautifulSoup object at 0x...>
+    """
     spoilers = soup.find_all('a', class_="tydai-spoiler")
     for link_tag in spoilers:
         link_tag.name = 'fieldset'
@@ -193,6 +299,20 @@ def add_spoiler_legends(soup):
     return soup
 
 def fictionlive_normalize(string):
+    """
+    Normalizes the given string for use in Fiction.live URLs.
+
+    Args:
+        string (str): The string to be normalized.
+
+    Returns:
+        str: The normalized string.
+
+    Examples:
+        >>> string = "Some Example String"
+        >>> fictionlive_normalize(string)
+        "some-example-string"
+    """
     # might be able to use this to preserve titles in normalized urls, if the scheme is the same
 
     # BUG: in achivement ids these are all replaced, but I *don't* know that the list is complete.
@@ -202,6 +322,20 @@ def fictionlive_normalize(string):
     return string.lower().replace(" ", "-").translate({ord(x) : None for x in special_chars})
 
 def append_achievments(soup):
+    """
+    Appends achievements to the provided BeautifulSoup object.
+
+    Args:
+        soup (BeautifulSoup): The BeautifulSoup object to modify.
+
+    Returns:
+        BeautifulSoup: The modified BeautifulSoup object with achievements appended.
+
+    Examples:
+        >>> soup = BeautifulSoup("<div><p>Content</p></div>", "html.parser")
+        >>> append_achievments(soup)
+        <BeautifulSoup object at 0x...>
+    """
     # achivements are present in the text as a kind of link, and you get the shiny popup by clicking them.
     achievement_links = soup.find_all('a', class_="tydai-achievement")
 
@@ -241,15 +375,38 @@ def append_achievments(soup):
     return soup
 
 def count_votes(chunk):
-    """So, fiction.live's api doesn't return the counted votes you see on the website.
-    After all, it needs to allow for things like revoking a vote,
-    with the count live and updated in realtime on your client.
-    So instead we get the raw vote-data, but have to count it ourselves."""
+    """
+    Counts the votes for each choice option in the provided chunk.
 
+    Args:
+        chunk (dict): The chunk containing the votes and choices.
+
+    Returns:
+        zip: A zip object containing tuples of choice options, verified votes, and total votes.
+
+    Examples:
+        >>> chunk = {'votes': {'uid1': [0, 1], 'uid2': 2}, 'choices': ['Choice 1', 'Choice 2'], ...}
+        >>> count_votes(chunk)
+        <zip object at 0x...>
+    """
     # optional.
     choices = chunk['choices'] if 'choices' in chunk else []
 
     def counter(votes):
+        """
+        Counts the votes for each choice option.
+
+        Args:
+            votes (dict): A dictionary containing the votes, where the keys are voter IDs and the values are the chosen option(s).
+
+        Returns:
+            list: A list containing the count of votes for each choice option.
+
+        Examples:
+            >>> votes = {'uid1': [0, 1], 'uid2': 2, ...}
+            >>> counter(votes)
+            [1, 1, 1, 0, ...]
+        """
         output = [0] * len(choices)
         for vote in votes.values():
             ## votes are either a single option-index or a list of option-indicies, depending on the choice type
@@ -288,6 +445,20 @@ def count_votes(chunk):
     return zip(choices, verified_votes, total_votes)
 
 def format_choice(chunk):
+    """
+    Formats the choice options and vote counts from the provided chunk.
+
+    Args:
+        chunk (dict): The chunk containing choice options and vote counts.
+
+    Returns:
+        str: The formatted HTML output of the choice options and vote counts.
+
+    Examples:
+        >>> chunk = {'votes': {'uid1': 'Vote 1', 'uid2': 'Vote 2'}, 'xOut': [1, 3], ...}
+        >>> format_choice(chunk)
+        "<h4><span>Choices — <small>Voting open — 2 voters</small></span></h4>\n<table class='voteblock'>...</table>"
+    """
 
     options = count_votes(chunk)
 
@@ -323,6 +494,20 @@ def format_choice(chunk):
     return output
 
 def format_readerposts(chunk):
+    """
+    Formats the reader posts and dice rolls from the provided chunk.
+
+    Args:
+        chunk (dict): The chunk containing reader posts and dice rolls.
+
+    Returns:
+        str: The formatted HTML output of the reader posts and dice rolls.
+
+    Examples:
+        >>> chunk = {'votes': {'uid1': 'Post 1', 'uid2': 'Post 2'}, 'dice': {'uid1': 'Roll 1', 'uid2': 'Roll 2'}, ...}
+        >>> format_readerposts(chunk)
+        "<h4><span>Choices — <small> Posting Open — 2 posts</small></span></h4>\n<div class='choiceitem'>...</div>"
+    """
 
     closed = "Closed" if 'closed' in chunk else "Open"
 
@@ -372,7 +557,20 @@ def format_unknown(chunk):
     )
 
 def getChapterText(url):
+    """
+    Retrieves the text content of a chapter from the provided URL.
 
+    Args:
+        url (str): The URL of the chapter.
+
+    Returns:
+        BeautifulSoup: A BeautifulSoup object containing the parsed HTML content of the chapter.
+
+    Examples:
+        >>> url = "https://fiction.live/chapter1"
+        >>> getChapterText(url)
+        <BeautifulSoup object at 0x...>
+    """
     chunk_handler = {
         "choice"     : format_choice,
         "readerPost" : format_readerposts,
@@ -410,10 +608,33 @@ def getChapterText(url):
 
 # Function to print messages with carriage return for loading effect
 def print_loading(message):
+    """
+    Prints a loading message to the standard output.
+
+    Args:
+        message (str): The loading message to be printed.
+
+    Returns:
+        None
+    """
     sys.stdout.write('\r' + message)
     sys.stdout.flush()
 
 def remove_empty_tags(soup):
+    """
+    Removes empty tags from the provided BeautifulSoup object.
+
+    Args:
+        soup (BeautifulSoup): The BeautifulSoup object to modify.
+
+    Returns:
+        BeautifulSoup: The modified BeautifulSoup object.
+
+    Examples:
+        >>> soup = BeautifulSoup("<div><p>Soup.</p><span></span></div>", "html.parser")
+        >>> remove_empty_tags(soup)
+        <div><p>Soup.</p></div>
+    """
     # Find all tags in the BeautifulSoup object
     all_tags = soup.find_all()
 
@@ -428,7 +649,19 @@ def remove_empty_tags(soup):
     return soup
 
 def img_url_trans(imgurl):
-    "Apparently site changed cdn URLs for images more than once."
+    """
+    Transforms the image URL to the new CDN URL format.
+
+    Args:
+        imgurl (str): The original image URL.
+
+    Returns:
+        str: The transformed image URL.
+
+    Examples:
+        >>> img_url_trans("https://example.com/image.jpg")
+        "https://cdn6.fiction.live/file/fictionlive/image.jpg"
+    """
     # logger.debug("pre--imgurl:%s"%imgurl)
     imgurl = re.sub(r'(\w+)\.cloudfront\.net',r'cdn6.fiction.live/file/fictionlive',imgurl)
     imgurl = re.sub(r'www\.filepicker\.io/api/file/(\w+)',r'cdn4.fiction.live/fp/\1',imgurl)
@@ -437,6 +670,19 @@ def img_url_trans(imgurl):
     return imgurl
 
 def format_images(img_elements):
+    """
+    Formats the image elements in the provided list.
+
+    Args:
+        img_elements (list): A list of BeautifulSoup image elements.
+
+    Returns:
+        None
+
+    Examples:
+        >>> img_elements = [img_element1, img_element2, ...]
+        >>> format_images(img_elements)
+    """
     for img in img_elements:
         try:
             # some pre-existing epubs have img tags that had src stripped off.
@@ -448,6 +694,26 @@ def format_images(img_elements):
             )
 
 def get_book_content(chapters_list, appendices_list, routes_list, book):
+    """
+    Downloads and adds chapters, appendices, and routes to the provided EPUB book.
+
+    Args:
+        chapters_list (list): A list of dictionaries containing chapter information, including title and URL.
+        appendices_list (list): A list of dictionaries containing appendix information, including title and URL.
+        routes_list (list): A list of dictionaries containing route information, including title and URL.
+        book (epub.EpubBook): The EPUB book to which the content will be added.
+
+    Returns:
+        epub.EpubBook: The EPUB book with the added content.
+
+    Examples:
+        >>> chapters_list = [{'title': 'Chapter 1', 'url': 'https://fiction.live/chapter1'}, ...]
+        >>> appendices_list = [{'title': 'Appendix A', 'url': 'https://fiction.live/appendixA'}, ...]
+        >>> routes_list = [{'title': 'Route X', 'url': 'https://fiction.live/routeX'}, ...]
+        >>> book = epub.EpubBook()
+        >>> get_book_content(chapters_list, appendices_list, routes_list, book)
+        <epub.EpubBook object at 0x...>
+    """
     print("Downloading Chapters...")
     for count, chapter in enumerate(chapters_list):
         chapter['content'] = getChapterText(chapter['url'])
@@ -492,6 +758,24 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
 
 # Function to create the EPUB file
 def create_book(book_data, book_number, total_books):
+    """
+    Creates an EPUB book based on the provided book data.
+
+    Args:
+        book_data (dict): A dictionary containing the book data, including title, author, chapters, appendices, routes, and other metadata.
+        book_number (int): The number of the book being created.
+        total_books (int): The total number of books to be created.
+
+    Returns:
+        epub.EpubBook: The created EPUB book.
+
+    Examples:
+        >>> book_data = {'t': 'Test Book', 'u': [{'n': 'John Doe'}], ...}
+        >>> book_number = 1
+        >>> total_books = 2
+        >>> create_book(book_data, book_number, total_books)
+        <epub.EpubBook object at 0x...>
+    """
     print(f"Creating book... {book_number}/{total_books}")
     book = epub.EpubBook() # Create the book
 
