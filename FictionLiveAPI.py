@@ -345,10 +345,10 @@ def format_readerposts(chunk):
     ## I *think* that formatting roll-only before writein-only posts is correct, but tbh, it's hard to tell.
     ## writeins are usually opened by the author for posts or rolls, not both at once.
     ## people tend to only mix the two by accident.
-    if dice == {}:
+    keepReaderPosts = False
+    if dice == {} and not keepReaderPosts:
         return ''
     
-    keepReaderPosts = False
     for uid, roll in dice.items():
         output += '<div class="choiceitem">'
         if roll: # optional. just because there's a list entry for it doesn't mean it has a value!
@@ -403,7 +403,7 @@ def getChapterText(url):
 
         handler = chunk_handler.get(chunk['nt'], format_unknown) # nt = node type
         text += handler(chunk)
-        text += "</div><br />\n"
+        text += "</div>\n"
 
     ## soup to repair the most egregious HTML errors.
     return BeautifulSoup(text, "html.parser")
@@ -413,14 +413,50 @@ def print_loading(message):
     sys.stdout.write('\r' + message)
     sys.stdout.flush()
 
+def remove_empty_tags(soup):
+    # Find all tags in the BeautifulSoup object
+    all_tags = soup.find_all()
+
+    # Loop through all tags
+    for tag in all_tags:
+        # Check if the tag is empty (no content)
+        if not tag.contents and not tag.text.strip() and tag.name != 'img':
+            # Remove the empty tag
+            tag.decompose()
+
+    # Return the modified BeautifulSoup object
+    return soup
+
+def img_url_trans(imgurl):
+    "Apparently site changed cdn URLs for images more than once."
+    # logger.debug("pre--imgurl:%s"%imgurl)
+    imgurl = re.sub(r'(\w+)\.cloudfront\.net',r'cdn6.fiction.live/file/fictionlive',imgurl)
+    imgurl = re.sub(r'www\.filepicker\.io/api/file/(\w+)',r'cdn4.fiction.live/fp/\1',imgurl)
+    imgurl = re.sub(r'cdn[34].fiction.live/(.+)',r'cdn6.fiction.live/file/fictionlive/\1',imgurl)
+    # logger.debug("post-imgurl:%s"%imgurl)
+    return imgurl
+
+def format_images(img_elements):
+    for img in img_elements:
+        try:
+            # some pre-existing epubs have img tags that had src stripped off.
+            if img.has_attr('src'):
+                img['src'] = img_url_trans(img['src'])
+        except AttributeError as ae:
+            logger.info(
+                f"Parsing for img tags failed--probably poor input HTML.  Skipping img({img})"
+            )
+
 def get_book_content(chapters_list, appendices_list, routes_list, book):
     print("Downloading Chapters...")
     for count, chapter in enumerate(chapters_list):
         chapter['content'] = getChapterText(chapter['url'])
-        if type(chapter['content']) == BeautifulSoup:
-            chapter['content'] = chapter['content'].encode_contents()
-        else:
+        if type(chapter['content']) != BeautifulSoup:
             continue
+        remove_empty_tags(chapter['content'])
+        if img_elements := chapter['content'].find_all('img'):
+            format_images(img_elements)
+        chapter['content'] = chapter['content'].encode_contents()
         epub_chapter = epub.EpubHtml(title=chapter['title'], file_name=f"chap_{count+1}.xhtml", lang="en")  # Create the chapter
         epub_chapter.content = chapter['content']  # Set the chapter content
         book.add_item(epub_chapter)  # Add formatted chapter to the book
@@ -430,10 +466,10 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         print("\nDownloading Appendices...")
         for count, appendix in enumerate(appendices_list):
             appendix['content'] = getChapterText(appendix['url'])
-            if type(appendix['content']) == BeautifulSoup:
-                appendix['content'] = appendix['content'].encode_contents()
-            else:
+            if type(appendix['content']) != BeautifulSoup:
                 continue
+            remove_empty_tags(appendix['content'])
+            appendix['content'] = appendix['content'].encode_contents()
             epub_chapter = epub.EpubHtml(title=appendix['title'], file_name=f"appendix_{count+1}.xhtml", lang="en")  # Create the chapter
             epub_chapter.content = appendix['content']  # Set the appendix content
             book.add_item(epub_chapter)  # Add formatted appendix to the book
@@ -443,17 +479,16 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         print("\nDownloading Routes...")
         for count, route in enumerate(routes_list):
             route['content'] = getChapterText(route['url'])
-            if type(route['content']) == BeautifulSoup:
-                route['content'] = route['content'].encode_contents()
-            else:
+            if type(route['content']) != BeautifulSoup:
                 continue
+            remove_empty_tags(route['content'])
+            route['content'] = route['content'].encode_contents()
             epub_chapter = epub.EpubHtml(title=route['title'], file_name=f"route_{count+1}.xhtml", lang="en")  # Create the chapter
             epub_chapter.content = route['content']  # Set the route content
             book.add_item(epub_chapter)  # Add formatted route to the book
             book.toc += (epub.Link(f"route_{count+1}.xhtml", route['title'], f"{route['title']}"),)  # Add the route to the table of contents
             print_loading(f"Route {count+1}/{len(routes_list)} downloaded.")
     return book
-
 
 # Function to create the EPUB file
 def create_book(book_data, book_number, total_books):
