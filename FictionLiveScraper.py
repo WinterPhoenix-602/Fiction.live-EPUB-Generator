@@ -472,7 +472,6 @@ def validate_filename(book, dir_path, epub_path, book_title):
         elif response.lower() == "n":
             # Get a new name for the EPUB file
             book_title = input("Enter a new name for the EPUB file: ").replace(' ', '_')
-            book.set_title(book_title)
             epub_path = os.path.join(dir_path, f"{book_title}.epub")
         else:
             print("Invalid response. Please enter 'y' or 'n'.")
