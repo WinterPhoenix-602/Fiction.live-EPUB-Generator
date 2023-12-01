@@ -345,18 +345,20 @@ def format_readerposts(chunk):
     ## I *think* that formatting roll-only before writein-only posts is correct, but tbh, it's hard to tell.
     ## writeins are usually opened by the author for posts or rolls, not both at once.
     ## people tend to only mix the two by accident.
-    if dice != {}:
-        for uid, roll in dice.items():
-            output += '<div class="choiceitem">'
-            if roll: # optional. just because there's a list entry for it doesn't mean it has a value!
-                output += f'<div class="dice">{str(roll)}' + '</div>\n'
-            if uid in posts:
-                if post := posts[uid]:
-                    output += str(post)
-                del posts[uid] # it's handled here with the roll instead of later
-            output += '</div>'
-
+    if dice == {}:
+        return ''
+    
     keepReaderPosts = False
+    for uid, roll in dice.items():
+        output += '<div class="choiceitem">'
+        if roll: # optional. just because there's a list entry for it doesn't mean it has a value!
+            output += f'<div class="dice">{str(roll)}' + '</div>\n'
+        if uid in posts and keepReaderPosts:
+            if post := posts[uid]:
+                output += str(post)
+            del posts[uid] # it's handled here with the roll instead of later
+        output += '</div>'
+
     if keepReaderPosts:
         for post in posts.values():
             if post:
