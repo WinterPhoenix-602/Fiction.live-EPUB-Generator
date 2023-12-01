@@ -546,9 +546,9 @@ def create_book(book_data, book_number, total_books):
 # The main function
 def main():  # sourcery skip: hoist-statement-from-loop
     # Get the URL(s) of the Table of Contents or Chapter
-    #story_urls = input("Enter Story URL(s): ")
+    story_urls = input("Enter Story URL(s): ")
     #story_urls = "https://fiction.live/stories/Shifting-The-Temporal-Tides/8J6NzhNiq7fE6XHnd" # Testing url 1
-    story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
+    #story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
     story_urls = story_urls.split(" ") if " " in story_urls else [story_urls]
     # Check if the URL(s) is/are valid
     valid_urls = validate_urls(story_urls)
