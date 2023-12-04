@@ -46,7 +46,7 @@ def validate_urls(urls):
             valid_urls.append(
                 {
                     'story':url, 
-                    'meta':f"https://fiction.live/api/node/{re.match(pattern2, url)[0]}"
+                    'meta':f"https://fiction.live/api/node/{re.match(pattern1, url)[0]}"
                     }
                     )
         elif re.match(pattern2, url): # If it is valid and in an incorrect format, convert and then append
@@ -84,7 +84,7 @@ def get_book_info(metadata_url):
     """
 
     if story_metadata := session.get(metadata_url).text:
-        if story_metadata != "null":
+        if story_metadata != "null" and "Cannot GET" not in story_metadata:
             story_metadata = json.loads(story_metadata)
             # gonna need these later for adding details to achievement-granting links in the text
             try:
@@ -92,7 +92,7 @@ def get_book_info(metadata_url):
             except KeyError:
                 achievements = []
             return story_metadata
-    print(f"{Fore.RED}Story does not exist: ({metadata_url})")
+    print(f"{Fore.RED}Error fetching story data at: ({metadata_url})")
     return None
 
 def get_chapters_appendices_and_routes(book_data):
@@ -827,6 +827,25 @@ def create_book(book_data, book_number, total_books):
 
     return book
 
+def get_valid_directory():
+    while True:
+        dir_path = input("Enter the directory where you want to save the EPUB file(s): ")
+
+        if dir_path.lower() == 'def':
+            dir_path = r"C:\Users\caide\Desktop\Personal Projects\Epub Editing\Fiction.live\API"
+
+        if '"' in dir_path:
+            dir_path = dir_path.strip('"')
+
+        dir_path = os.path.normpath(dir_path)
+
+        if not os.path.exists(dir_path) or not os.path.isdir(dir_path):
+            print("Invalid directory. Please enter a valid directory.")
+        else:
+            break
+
+    return dir_path
+
 # The main function
 def main():  # sourcery skip: hoist-statement-from-loop
     r"""
@@ -868,17 +887,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
     valid_urls = validate_urls(story_urls)
 
     # Get the directory where the EPUB file will be saved
-    while True:
-        dir_path = input("Enter the directory where you want to save the EPUB file(s): ") # Get the directory path from the user
-        # Check if the directory is valid
-        try:
-            if not os.path.isdir(dir_path):
-                raise ValueError
-        except ValueError:
-            print("Invalid directory. Please enter a valid directory.")
-            continue
-        else:
-            break
+    dir_path = get_valid_directory()
 
     # Loop through the URLs and create an EPUB file for each one
     for count, book_urls in enumerate(valid_urls):
