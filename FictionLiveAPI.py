@@ -35,7 +35,7 @@ def validate_urls(urls):
     """
     # Regular expression pattern to match valid URLs
     pattern1 = r"^https://fiction\.live/stories//([A-Za-z0-9]{17})"
-    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)+)/([A-Za-z0-9]{17})(/([A-Za-z0-9]+(-[A-Za-z0-9]+)+)/[A-Za-z0-9]+)?"
+    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)*)/([A-Za-z0-9]{17})(/([A-Za-z0-9]+(-[A-Za-z0-9]*)*)/[A-Za-z0-9]+)?"
 
     valid_urls = []
     invalid_urls = []
@@ -46,7 +46,7 @@ def validate_urls(urls):
             valid_urls.append(
                 {
                     'story':url, 
-                    'meta':f"https://fiction.live/api/node/{re.match(pattern1, url)[0]}"
+                    'meta':f"https://fiction.live/api/node/{re.match(pattern1, url)[1]}"
                     }
                     )
         elif re.match(pattern2, url): # If it is valid and in an incorrect format, convert and then append
@@ -92,10 +92,10 @@ def get_book_info(metadata_url):
             except KeyError:
                 achievements = []
             return story_metadata
-    print(f"{Fore.RED}Error fetching story data at: ({metadata_url})")
+    print(f"{Fore.RED}Error fetching story data at: ({metadata_url}){Style.RESET_ALL}")
     return None
 
-def get_chapters_appendices_and_routes(book_data):
+def get_book_map(book_data):
     """
     Retrieves the chapters, appendices, and routes from the provided book data.
 
@@ -782,12 +782,25 @@ def create_book(book_data, book_number, total_books):
     # Set metadata properties
     book.set_title(book_data['t']) # Set the title
     book.add_author(book_data['u'][0]['n']) # Set the author
+    book.add_metadata('DC', 'date', f'{parse_timestamp(book_data["rt"])}')
+    if book_data.get('b'):
+        book.add_metadata('DC', 'description', book_data["b"].strip())
+    if book_data.get('d'):
+        book.add_metadata('DC', 'description', book_data["d"].strip())
+    book.add_metadata('DC', 'publisher', 'fiction.live')
+    book.add_metadata('DC', 'subject', 'Web Scraped')
+    for tag in book_data["ta"]:
+        book.add_metadata('DC', 'subject', tag)
+    if book_data.get("spoilerTags"):
+        includeSpoilerTags = False
+        for spoiler_tag in book_data["spoilerTags"] and includeSpoilerTags:
+            book.add_metadata('DC', 'subject', spoiler_tag)
     book.add_item(epub.EpubNav()) # Add the navigation
 
     # Create the title page
     title_page = epub.EpubHtml(title="Title Page", file_name="title.xhtml", lang="en")
 
-    chapters_list, appendices_list, routes_list = get_chapters_appendices_and_routes(book_data)
+    chapters_list, appendices_list, routes_list = get_book_map(book_data)
 
     # Set the title page content from book properties
     title_page_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
@@ -812,7 +825,7 @@ def create_book(book_data, book_number, total_books):
                                     {f'<b>Description:</b> {book_data["d"].strip()}<br />' if book_data.get('d') else ''}
                                     {f'<b>Synopsis:</b> {book_data["b"].strip()}<br />' if book_data.get('b') else ''}
                                     <b>Tags:</b> {", ".join(book_data["ta"])}<br />
-                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data["spoilerTags"] else ''}
+                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data.get("spoilerTags") else ''}
                                 </div>
                             </body>
                             </html>"""
@@ -880,7 +893,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
         EPUB file written to C:\Users\username\Desktop\Folder\story-1.epub"""
     # Get the URL(s) of the Table of Contents or Chapter
     story_urls = input("Enter Story URL(s): ")
-    #story_urls = "https://fiction.live/stories/Shifting-The-Temporal-Tides/8J6NzhNiq7fE6XHnd" # Testing url 1
+    #story_urls = "https://fiction.live/stories/Broodhive/irT23yRJJF4N2H5hr/home" # Testing url 1
     #story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
     story_urls = story_urls.split(" ") if " " in story_urls else [story_urls]
     # Check if the URL(s) is/are valid
@@ -897,7 +910,6 @@ def main():  # sourcery skip: hoist-statement-from-loop
             del book
             continue
         book = create_book(book_data, count+1, len(valid_urls))
-        book.add_metadata('DC', 'url', book_urls['story'])
         save_book(book, dir_path)
         del book
 
