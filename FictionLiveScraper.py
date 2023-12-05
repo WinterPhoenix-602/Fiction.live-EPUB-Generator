@@ -465,7 +465,7 @@ def validate_filename(book, dir_path, epub_path, book_title):
         epub_path = os.path.join(dir_path, f"{new_title.replace(' ', '_')}.epub")
         book.set_title(new_title)
     while os.path.isfile(epub_path):
-        response = input("An EPUB file with this name already exists in the directory. Do you want to overwrite it? (y/n) ")
+        response = input("\nAn EPUB file with this name already exists in the directory. Do you want to overwrite it? (y/n) ")
         if response.lower() == "y":
             os.remove(epub_path)
             break
