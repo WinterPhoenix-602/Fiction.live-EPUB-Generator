@@ -783,6 +783,7 @@ def create_book(book_data, book_number, total_books):
     book.set_title(book_data['t']) # Set the title
     book.add_author(book_data['u'][0]['n']) # Set the author
     book.add_metadata('DC', 'date', f'{parse_timestamp(book_data["rt"])}')
+    book.add_metadata('DC', 'description', f'https://fiction.live/stories//{book_data["_id"]}'
     if book_data.get('b'):
         book.add_metadata('DC', 'description', book_data["b"].strip())
     if book_data.get('d'):
