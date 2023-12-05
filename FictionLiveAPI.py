@@ -782,19 +782,21 @@ def create_book(book_data, book_number, total_books):
     # Set metadata properties
     book.set_title(book_data['t']) # Set the title
     book.add_author(book_data['u'][0]['n']) # Set the author
-    book.add_metadata('DC', 'date', f'{parse_timestamp(book_data["rt"])}')
-    if book_data.get('b'):
-        book.add_metadata('DC', 'description', book_data["b"].strip())
-    if book_data.get('d'):
-        book.add_metadata('DC', 'description', book_data["d"].strip())
-    book.add_metadata('DC', 'publisher', 'fiction.live')
-    book.add_metadata('DC', 'subject', 'Web Scraped')
+    book.add_metadata('DC', 'date', f'{parse_timestamp(book_data["rt"])}') # Set the publish date
+    description = ''
+    if book_data.get('b') and book_data.get('d'):
+        description += book_data["b"].strip() + '\n' + book_data["d"].strip()
+    else:
+        description += book_data.get('b', '').strip() + book_data.get('d', '').strip()
+    book.add_metadata('DC', 'description', description) # Set the description
+    book.add_metadata('DC', 'publisher', 'fiction.live') # Set the publisher
+    book.add_metadata('DC', 'subject', 'Web Scraped') # Add Web Scraped tag
     for tag in book_data["ta"]:
-        book.add_metadata('DC', 'subject', tag)
+        book.add_metadata('DC', 'subject', tag) # Add tags
     if book_data.get("spoilerTags"):
         includeSpoilerTags = False
         for spoiler_tag in book_data["spoilerTags"] and includeSpoilerTags:
-            book.add_metadata('DC', 'subject', spoiler_tag)
+            book.add_metadata('DC', 'subject', spoiler_tag) # Add spoiler tags
     book.add_item(epub.EpubNav()) # Add the navigation
 
     # Create the title page
