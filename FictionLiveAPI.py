@@ -793,11 +793,10 @@ def create_book(book_data, book_number, total_books):
     book.add_metadata('DC', 'subject', 'Web Scraped') # Add Web Scraped tag
     for tag in book_data["ta"]:
         book.add_metadata('DC', 'subject', tag) # Add tags
-    if book_data.get("spoilerTags"):
-        includeSpoilerTags = False
-        for spoiler_tag in book_data["spoilerTags"] and includeSpoilerTags:
+    includeSpoilerTags = False
+    if book_data.get("spoilerTags") and includeSpoilerTags:
+        for spoiler_tag in book_data["spoilerTags"]:
             book.add_metadata('DC', 'subject', spoiler_tag) # Add spoiler tags
-    book.add_item(epub.EpubNav()) # Add the navigation
 
     # Create the title page
     title_page = epub.EpubHtml(title="Title Page", file_name="title.xhtml", lang="en")
@@ -833,6 +832,7 @@ def create_book(book_data, book_number, total_books):
                             </html>"""
     title_page.content = title_page_html.encode('utf-8') # Set the title page content
     book.add_item(title_page)
+    book.add_item(epub.EpubNav()) # Add the navigation
     book.toc += (epub.Link("title.xhtml", 'Title Page', "Title Page"),)  # Add the title page to the table of contents
 
     book = get_book_content(chapters_list, appendices_list, routes_list, book)
