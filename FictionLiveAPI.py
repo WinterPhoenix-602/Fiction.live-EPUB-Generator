@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 import json
 from ebooklib import epub
 from exceptions import *
-from FictionLiveScraper import save_book
+import string
 from datetime import datetime
 import os
 import re
@@ -878,6 +878,41 @@ def get_valid_directory():
             break
 
     return dir_path
+
+# Save the EPUB file
+def save_book(book, dir_path):
+    # Check if the directory already contains a file with the same name
+    book_title = book.title
+    epub_path = os.path.join(dir_path, f"{book_title.replace(' ', '_')}.epub")
+
+    # Check if the book title contains invalid characters
+    epub_path = validate_filename(book, dir_path, epub_path, book_title)
+
+    # Write the EPUB file to the specified directory
+    print("\nWriting EPUB file...")
+    with open(epub_path, 'wb') as epub_file:
+        epub.write_epub(epub_file, book)
+    print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}\n")
+
+def validate_filename(book, dir_path, epub_path, book_title):
+    invalid_chars = set(string.punctuation.replace('_', ''))
+    if any(char in invalid_chars for char in book_title):
+        print("\nThe book title contains invalid characters. Invalid characters will be replaced with '-'\r")
+        new_title = "".join(["-" if char in invalid_chars else char for char in book_title])
+        epub_path = os.path.join(dir_path, f"{new_title.replace(' ', '_')}.epub")
+        book.set_title(new_title)
+    while os.path.isfile(epub_path):
+        response = input("\nAn EPUB file with this name already exists in the directory. Do you want to overwrite it? (y/n) ")
+        if response.lower() == "y":
+            os.remove(epub_path)
+            break
+        elif response.lower() == "n":
+            # Get a new name for the EPUB file
+            book_title = input("Enter a new name for the EPUB file: ").replace(' ', '_')
+            epub_path = os.path.join(dir_path, f"{book_title}.epub")
+        else:
+            print("Invalid response. Please enter 'y' or 'n'.")
+    return epub_path
 
 # The main function
 def main():  # sourcery skip: hoist-statement-from-loop
