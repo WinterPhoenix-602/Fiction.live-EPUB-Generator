@@ -442,7 +442,7 @@ def count_votes(chunk):
                 altered_choices.append(choice)
         choices = altered_choices
 
-    return zip(choices, verified_votes, total_votes)
+    return (choices, verified_votes, total_votes)
 
 def format_choice(chunk):
     """
@@ -470,6 +470,21 @@ def format_choice(chunk):
 
     num_voters = len(chunk['votes']) if 'votes' in chunk else 0
 
+    winning_options = []
+
+    # Find the winner and tied options
+    max_votes = 0
+    for index, total_votes in enumerate(options[2]):
+        if not options[0][index].startswith("+") and total_votes > max_votes:
+            max_votes = total_votes
+    for index, total_votes in enumerate(options[2]):
+        if total_votes >= num_voters / 2 or total_votes >= max_votes:
+            winning_options.append((options[0][index], options[1][index], options[2][index]))
+
+    # Sort the winning options by total votes and then by option text
+    if len(winning_options) > 1:
+        winning_options.sort(key=lambda x: (not x[0].startswith('+'), x[0], x[2]), reverse=True)
+
     vote_title = chunk['b'] if 'b' in chunk else "Choices"
 
     output = ""
@@ -480,14 +495,13 @@ def format_choice(chunk):
     # we've got everything needed to build the html for our vote table.
     output += "<table class=\"voteblock\">\n"
 
-    # filter out the crossed-out options, which display last
-    for index, (choice_text, verified_votes, total_votes) in enumerate(options):
-        if index in x_outs or total_votes < num_voters / 2:
-            continue
+    # Generate HTML for the winning options
+    for choice_text, verified_votes, total_votes in winning_options:
         output += "<tr class=\"choiceitem\"><td>" + str(choice_text) + "</td><td class=\"votecount\">"
         if verified_votes > 0:
             output += f"★{str(verified_votes)}/"
-        output += str(total_votes)+ " </td></tr>\n"
+        output += str(total_votes) + " </td></tr>\n"
+
 
     output += "</table>\n"
 
@@ -636,17 +650,18 @@ def remove_empty_tags(soup):
         <div><p>Soup.</p></div>
     """
     # Find all tags in the BeautifulSoup object
-    all_tags = soup.find_all()
-
+    if not (all_tags := soup.find_all()):
+        return ""
+        
     # Loop through all tags
     for tag in all_tags:
         # Check if the tag is empty (no content)
-        if not tag.contents and not tag.text.strip() and tag.name != 'img':
+        if not tag.contents and not tag.text.strip() and tag.name != 'img' and tag.name != 'br':
             # Remove the empty tag
             tag.decompose()
 
     # Return the modified BeautifulSoup object
-    return soup
+    return soup if soup.find_all() else ""
 
 def img_url_trans(imgurl):
     """
@@ -732,9 +747,9 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         print("\nDownloading Appendices...")
         for count, appendix in enumerate(appendices_list):
             appendix['content'] = getChapterText(appendix['url'])
+            appendix['content'] = remove_empty_tags(appendix['content'])
             if type(appendix['content']) != BeautifulSoup:
                 continue
-            remove_empty_tags(appendix['content'])
             appendix['content'] = appendix['content'].encode_contents()
             epub_chapter = epub.EpubHtml(title=appendix['title'], file_name=f"appendix_{count+1}.xhtml", lang="en")  # Create the chapter
             epub_chapter.content = appendix['content']  # Set the appendix content
@@ -776,7 +791,7 @@ def create_book(book_data, book_number, total_books):
         >>> create_book(book_data, book_number, total_books)
         <epub.EpubBook object at 0x...>
     """
-    print(f"Creating book... {book_number}/{total_books}")
+    print(f'Creating book {book_number}/{total_books} "{book_data["t"]}".')
     book = epub.EpubBook() # Create the book
 
     # Set metadata properties
@@ -791,12 +806,15 @@ def create_book(book_data, book_number, total_books):
     book.add_metadata('DC', 'description', description) # Set the description
     book.add_metadata('DC', 'publisher', 'fiction.live') # Set the publisher
     book.add_metadata('DC', 'subject', 'Web Scraped') # Add Web Scraped tag
+    includeSpoilerTags = False
+    if book_data.get("spoilerTags", []):
+        book_data["ta"] = [tag for tag in book_data.get("ta", []) if tag not in book_data.get("spoilerTags", [])]
+        if includeSpoilerTags:
+            for spoiler_tag in book_data["spoilerTags"]:
+                book.add_metadata('DC', 'subject', spoiler_tag) # Add spoiler tags
     for tag in book_data["ta"]:
         book.add_metadata('DC', 'subject', tag) # Add tags
-    includeSpoilerTags = False
-    if book_data.get("spoilerTags") and includeSpoilerTags:
-        for spoiler_tag in book_data["spoilerTags"]:
-            book.add_metadata('DC', 'subject', spoiler_tag) # Add spoiler tags
+    
 
     # Create the title page
     title_page = epub.EpubHtml(title="Title Page", file_name="title.xhtml", lang="en")
@@ -826,7 +844,7 @@ def create_book(book_data, book_number, total_books):
                                     {f'<b>Description:</b> {book_data["d"].strip()}<br />' if book_data.get('d') else ''}
                                     {f'<b>Synopsis:</b> {book_data["b"].strip()}<br />' if book_data.get('b') else ''}
                                     <b>Tags:</b> {", ".join(book_data["ta"])}<br />
-                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data.get("spoilerTags") else ''}
+                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data.get("spoilerTags") and includeSpoilerTags else ''}
                                 </div>
                             </body>
                             </html>"""
