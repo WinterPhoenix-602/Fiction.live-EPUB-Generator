@@ -470,17 +470,16 @@ def format_choice(chunk):
 
     num_voters = len(chunk['votes']) if 'votes' in chunk else 0
 
-    winning_options = []
-
     # Find the winner and tied options
     max_votes = 0
     for index, total_votes in enumerate(options[2]):
         if not options[0][index].startswith("+") and total_votes > max_votes:
             max_votes = total_votes
-    for index, total_votes in enumerate(options[2]):
-        if total_votes >= num_voters / 2 or total_votes >= max_votes:
-            winning_options.append((options[0][index], options[1][index], options[2][index]))
-
+    winning_options = [
+        (options[0][index], options[1][index], options[2][index])
+        for index, total_votes in enumerate(options[2])
+        if total_votes >= num_voters / 2 or total_votes >= max_votes
+    ]
     # Sort the winning options by total votes and then by option text
     if len(winning_options) > 1:
         winning_options.sort(key=lambda x: (not x[0].startswith('+'), x[0], x[2]), reverse=True)
