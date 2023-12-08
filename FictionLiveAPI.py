@@ -478,7 +478,7 @@ def format_choice(chunk):
     winning_options = [
         (options[0][index], options[1][index], options[2][index])
         for index, total_votes in enumerate(options[2])
-        if total_votes >= num_voters / 2 or total_votes >= max_votes
+        if total_votes >= max_votes / 2 or total_votes >= max_votes
     ]
     # Sort the winning options by total votes and then by option text
     if len(winning_options) > 1:
