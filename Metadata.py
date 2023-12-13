@@ -25,13 +25,27 @@ def read_epub_metadata(epub_file_path):
             'Description': book.get_metadata('DC', 'description')[0][0]
             if book.get_metadata('DC', 'description')
             else 'N/A',
+            'Identifiers': [identifier[0] for identifier in book.get_metadata('DC', 'identifier')] if book.get_metadata('DC', 'identifier') else [],
         }
     except Exception as e:
         print(f"Error reading EPUB metadata: {e}")
         return None
 
-def add_url_identifier(book, url):
-    book.add_metadata('DC', 'identifier', url, {'scheme':'opf:URL'}) # Add URL identifier
+def add_url_identifier(book, url, cleaned_description):
+    book = epub.read_epub(book)
+
+    if existing_identifiers := [
+        identifier
+        for identifier in book.get_metadata('DC', 'identifier')
+        if 'opf:URL' in identifier[1].get('scheme', '')
+        and identifier[1].get('scheme', '')
+    ]:
+        print("opf:URL identifier already exists.")
+    else:
+        # Add URL identifier
+        book.add_metadata('DC', 'identifier', url, {'scheme': 'opf:URL'})
+        book.set_unique_metadata('DC', 'description', cleaned_description)
+        print(f"opf:URL Identifier added: {url}")
 
 def extract_and_remove_url(description):
     if not (url_match := re.search(r'URL: (https?://\S+)', description)):
@@ -76,23 +90,13 @@ def main():
 
             # Add URL Identifier to the EPUB metadata
             if url:
-                add_url_from_desc(selected_epub_file, url, cleaned_description)
+                add_url_identifier(selected_epub_file, url, cleaned_description)
             else:
                 print("No URL found in the description.")
         else:
             print("Failed to read EPUB metadata.")
     else:
         print("Invalid choice. Please enter a valid number.")
-
-
-def add_url_from_desc(selected_epub_file, url, cleaned_description):
-    book = epub.read_epub(selected_epub_file)
-    add_url_identifier(book, url)
-    epub.write_epub(selected_epub_file, book)
-
-    print(f"\nURL Identifier added: {url}")
-    print("Description after removing URL:")
-    print(cleaned_description)
 
 if __name__ == "__main__":
     main()
