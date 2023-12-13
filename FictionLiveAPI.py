@@ -802,6 +802,8 @@ def create_book(book_data, book_number, total_books):
         description += book_data["b"].strip() + '\n' + book_data["d"].strip()
     elif book_data.get('b') or book_data.get('d'):
         description += book_data.get('b', '').strip() + book_data.get('d', '').strip()
+    else:
+        description = 'Description not found.'
     book.add_metadata('DC', 'description', description) # Set the description
     book.add_metadata('DC', 'publisher', 'fiction.live') # Set the publisher
     book.add_metadata('DC', 'identifier', f'https://fiction.live/stories//{book_data["_id"]}', {'scheme':'opf:URL'}) # Add URL identifier
