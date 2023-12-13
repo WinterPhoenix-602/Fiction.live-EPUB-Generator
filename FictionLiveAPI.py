@@ -7,6 +7,7 @@ from six import text_type as unicode
 logger = logging.getLogger(__name__)
 import json
 from ebooklib import epub
+from ReadEpub import fix_url_identifier
 from exceptions import *
 import string
 from datetime import datetime
@@ -895,6 +896,7 @@ def save_book(book, dir_path):
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
     print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}\n")
+    fix_url_identifier(epub_path)
 
 def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
