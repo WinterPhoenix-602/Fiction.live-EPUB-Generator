@@ -807,7 +807,7 @@ def create_book(book_data, book_number, total_books):
         description = 'Description not found.'
     book.add_metadata('DC', 'description', description) # Set the description
     book.add_metadata('DC', 'publisher', 'fiction.live') # Set the publisher
-    book.add_metadata('DC', 'identifier', f'https://fiction.live/stories//{book_data["_id"]}', {'scheme':'opf:URL'}) # Add URL identifier
+    book.add_metadata('DC', 'identifier', f'url:https://fiction.live/stories//{book_data["_id"]}') # Add URL identifier
     book.add_metadata('DC', 'subject', 'Web Scraped') # Add Web Scraped tag
     includeSpoilerTags = False
     if book_data.get("spoilerTags", []):
@@ -896,7 +896,6 @@ def save_book(book, dir_path):
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
     print(f"EPUB file written to {Fore.YELLOW}{epub_path}{Style.RESET_ALL}\n")
-    fix_url_identifier(epub_path)
 
 def validate_filename(book, dir_path, epub_path, book_title):
     invalid_chars = set(string.punctuation.replace('_', ''))
