@@ -21,6 +21,15 @@ alert = r"Sound\alert.wav"
 success = r"Sound\success.wav"
 
 def play_sound(sound_file):
+    """
+    Plays a sound file.
+
+    Args:
+        sound_file (str): The path to the sound file.
+
+    Returns:
+        None
+    """
     wave_obj = sa.WaveObject.from_wave_file(sound_file)
     play_obj = wave_obj.play()
     play_obj.wait_done()  # Wait for sound to finish playing
@@ -393,12 +402,12 @@ def count_votes(chunk):
         chunk (dict): The chunk containing the votes and choices.
 
     Returns:
-        zip: A zip object containing tuples of choice options, verified votes, and total votes.
+        tuple: A tuple containing lists of choice options, verified votes, and total votes.
 
     Examples:
         >>> chunk = {'votes': {'uid1': [0, 1], 'uid2': 2}, 'choices': ['Choice 1', 'Choice 2'], ...}
         >>> count_votes(chunk)
-        <zip object at 0x...>
+        (["Choice 1", "Choice 2"], [0, 1], [0, 1])
     """
     # optional.
     choices = chunk['choices'] if 'choices' in chunk else []
