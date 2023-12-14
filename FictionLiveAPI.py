@@ -7,7 +7,6 @@ from six import text_type as unicode
 logger = logging.getLogger(__name__)
 import json
 from ebooklib import epub
-from ReadEpub import fix_url_identifier
 from exceptions import *
 import string
 from datetime import datetime
