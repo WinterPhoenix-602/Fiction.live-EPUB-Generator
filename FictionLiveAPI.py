@@ -17,8 +17,8 @@ from colorama import Fore, Style
 
 session = requests.Session()
 achievements = []
-alert = r"Sound\alert.wav"
-success = r"Sound\success.wav"
+ALERT_SOUND_PATH = r"Sound\alert.wav"
+SUCCESS_SOUND_PATH = r"Sound\success.wav"
 
 def play_sound(sound_file):
     """
@@ -35,7 +35,7 @@ def play_sound(sound_file):
     play_obj.wait_done()  # Wait for sound to finish playing
 
 # Function to validate URL(s)
-def validate_urls(urls):
+def process_urls(urls):
     """
     Validates a list of URLs and returns the valid ones along with their corresponding metadata URLs.
 
@@ -75,12 +75,12 @@ def validate_urls(urls):
             )
         else: # If it is invalid, append to invalid urls and display
             invalid_urls.append(url)
-            play_sound(alert)
+            play_sound(ALERT_SOUND_PATH)
             print(f"{Fore.RED}Invalid URL: {url}{Style.RESET_ALL}")
 
     # If there are no valid URLs, display a message and exit the program
     if not valid_urls:
-        play_sound(alert)
+        play_sound(ALERT_SOUND_PATH)
         print(f"{Fore.RED}No valid URLs found.{Style.RESET_ALL}")
         exit()
 
@@ -111,7 +111,7 @@ def get_book_info(metadata_url):
             except KeyError:
                 achievements = []
             return story_metadata
-    play_sound(alert)
+    play_sound(ALERT_SOUND_PATH)
     print(f"{Fore.RED}Error fetching story data at: ({metadata_url}){Style.RESET_ALL}")
     return None
 
@@ -585,7 +585,7 @@ def format_readerposts(chunk):
     return output
 
 def format_unknown(chunk):
-    play_sound(alert)
+    play_sound(ALERT_SOUND_PATH)
     raise NotImplementedError(
         f"Unknown chunk type ({chunk}) in fiction.live story."
     )
@@ -898,7 +898,7 @@ def get_valid_directory():
         if os.path.exists(dir_path) and os.path.isdir(dir_path):
             break
 
-        play_sound(alert)
+        play_sound(ALERT_SOUND_PATH)
         print(f"{Fore.RED}Invalid directory. Please enter a valid directory.{Style.RESET_ALL}")
     return dir_path
 
@@ -915,7 +915,7 @@ def save_book(book, dir_path):
     print("\nWriting EPUB file...")
     with open(epub_path, 'wb') as epub_file:
         epub.write_epub(epub_file, book)
-    play_sound(success)
+    play_sound(SUCCESS_SOUND_PATH)
     print(f"EPUB file written to {Fore.GREEN}{epub_path}{Style.RESET_ALL}\n")
 
 def validate_filename(book, dir_path, epub_path, book_title):
@@ -926,7 +926,7 @@ def validate_filename(book, dir_path, epub_path, book_title):
         epub_path = os.path.join(dir_path, f"{new_title.replace(' ', '_')}.epub")
         book.set_title(new_title)
     while os.path.isfile(epub_path):
-        play_sound(alert)
+        play_sound(ALERT_SOUND_PATH)
         response = input("\nAn EPUB file with this name already exists in the directory. Do you want to overwrite it? (y/n) ")
         if response.lower() == "y":
             os.remove(epub_path)
@@ -936,7 +936,7 @@ def validate_filename(book, dir_path, epub_path, book_title):
             book_title = input("Enter a new name for the EPUB file: ").replace(' ', '_')
             epub_path = os.path.join(dir_path, f"{book_title}.epub")
         else:
-            play_sound(alert)
+            play_sound(ALERT_SOUND_PATH)
             print(f"{Fore.YELLOW}Invalid response. Please enter 'y' or 'n'.")
     return epub_path
 
@@ -978,7 +978,7 @@ def main():  # sourcery skip: hoist-statement-from-loop
     #story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
     story_urls = story_urls.split(" ") if " " in story_urls else [story_urls]
     # Check if the URL(s) is/are valid
-    valid_urls = validate_urls(story_urls)
+    valid_urls = process_urls(story_urls)
 
     # Get the directory where the EPUB file will be saved
     dir_path = get_valid_directory()
