@@ -43,7 +43,7 @@ def validate_urls(urls):
     """
     # Regular expression pattern to match valid URLs
     pattern1 = r"^https://fiction\.live/stories//([A-Za-z0-9]{17})"
-    pattern2 = r"^https://fiction\.live/stories/([A-Za-z0-9]+(-[A-Za-z0-9]*)*)/([A-Za-z0-9]{17})(/([A-Za-z0-9]+(-[A-Za-z0-9]*)*)/[A-Za-z0-9]+)?"
+    pattern2 = r"^https://fiction\.live/stories/(-*[A-Za-z0-9]+(-[A-Za-z0-9]*)*)/([A-Za-z0-9]{17})(/(-*[A-Za-z0-9]+(-[A-Za-z0-9]*)*)/[A-Za-z0-9]+)?"
 
     valid_urls = []
     invalid_urls = []
