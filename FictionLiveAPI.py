@@ -493,7 +493,7 @@ def format_choice(chunk):
     ]
     # Sort the winning options by total votes and then by option text
     if len(winning_options) > 1:
-        winning_options.sort(key=lambda x: (not x[0].startswith('+'), x[0], x[2]), reverse=True)
+        winning_options.sort(key=lambda x: (not x[0].startswith('+'), x[2], x[1]), reverse=True)
 
     vote_title = chunk['b'] if 'b' in chunk else "Choices"
 
