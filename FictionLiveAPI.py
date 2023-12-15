@@ -61,8 +61,8 @@ def process_urls(urls):
         if re.match(pattern, url): # If it is valid, ensure proper formatting and then append
             valid_urls.append(
                 {
-                    'story': f"https://fiction.live/stories//{re.match(pattern, url)[3]}",
-                    'meta': f"https://fiction.live/api/node/{re.match(pattern, url)[3]}"
+                    'story': f"https://fiction.live/stories//{re.match(pattern, url)[2]}",
+                    'meta': f"https://fiction.live/api/node/{re.match(pattern, url)[2]}"
                 }
             )
         else: # If it is invalid, append to invalid urls and display
