@@ -34,7 +34,7 @@ def play_sound(sound_file):
     play_obj = wave_obj.play()
     play_obj.wait_done()  # Wait for sound to finish playing
 
-# Function to validate URL(s)
+# Function to process URL(s)
 def process_urls(urls):
     """
     Validates a list of URLs and returns the valid ones along with their corresponding metadata URLs.
@@ -51,26 +51,18 @@ def process_urls(urls):
         [{'story': 'https://fiction.live/stories//1234567890abcdef', 'meta': 'https://fiction.live/api/node/1234567890abcdef'}, ...]
     """
     # Regular expression pattern to match valid URLs
-    pattern1 = r"^https://fiction\.live/stories//([A-Za-z0-9]{17})"
-    pattern2 = r"^https://fiction\.live/stories/(-*[A-Za-z0-9]+(-[A-Za-z0-9]*)*)/([A-Za-z0-9]{17})(/(-*[A-Za-z0-9]+(-[A-Za-z0-9]*)*)/[A-Za-z0-9]+)?"
+    pattern = r"^https://fiction.live/stories/([-A-Za-z0-9]+)?/([A-Za-z0-9]{17})(/[-A-Za-z0-9]+/[A-Za-z0-9]+)?"
 
     valid_urls = []
     invalid_urls = []
 
     # Loop through each URL and check if it is valid
     for url in urls:
-        if re.match(pattern1, url): # If it is valid and in the correct format, append to valid urls
+        if re.match(pattern, url): # If it is valid, ensure proper formatting and then append
             valid_urls.append(
                 {
-                    'story':url, 
-                    'meta':f"https://fiction.live/api/node/{re.match(pattern1, url)[1]}"
-                    }
-                    )
-        elif re.match(pattern2, url): # If it is valid and in an incorrect format, convert and then append
-            valid_urls.append(
-                {
-                    'story': f"https://fiction.live/stories//{re.match(pattern2, url)[3]}",
-                    'meta': f"https://fiction.live/api/node/{re.match(pattern2, url)[3]}"
+                    'story': f"https://fiction.live/stories//{re.match(pattern, url)[3]}",
+                    'meta': f"https://fiction.live/api/node/{re.match(pattern, url)[3]}"
                 }
             )
         else: # If it is invalid, append to invalid urls and display
