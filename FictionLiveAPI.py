@@ -8,7 +8,6 @@ from six import text_type as unicode
 logger = logging.getLogger(__name__)
 import json
 from ebooklib import epub
-from exceptions import *
 import string
 from datetime import datetime
 import os
@@ -46,7 +45,7 @@ def process_urls(urls):
 
     Examples:
         >>> urls = ["https://fiction.live/stories/1234567890abcdef", "https://fiction.live/stories/abcdefg/1234567890abcdef"]
-        >>> validate_urls(urls)
+        >>> process_urls(urls)
         [{'story': 'https://fiction.live/stories//1234567890abcdef', 'meta': 'https://fiction.live/api/node/1234567890abcdef'}, ...]
     """
     # Regular expression pattern to match valid URLs
@@ -73,7 +72,7 @@ def process_urls(urls):
     if not valid_urls:
         play_sound(ALERT_SOUND_PATH)
         print(f"{Fore.RED}No valid URLs found.{Style.RESET_ALL}")
-        exit()
+        return []
 
     return valid_urls
 
