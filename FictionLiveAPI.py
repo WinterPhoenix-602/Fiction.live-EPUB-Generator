@@ -34,7 +34,6 @@ def play_sound(sound_file):
     play_obj = wave_obj.play()
     play_obj.wait_done()  # Wait for sound to finish playing
 
-# Function to process URL(s)
 def process_urls(urls):
     """
     Validates a list of URLs and returns the valid ones along with their corresponding metadata URLs.
