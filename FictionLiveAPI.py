@@ -970,6 +970,9 @@ def main():  # sourcery skip: hoist-statement-from-loop
     # Check if the URL(s) is/are valid
     valid_urls = process_urls(story_urls)
 
+    if not valid_urls: # If no valid urls were entered, exit the program
+        exit()
+
     # Get the directory where the EPUB file will be saved
     dir_path = get_valid_directory()
 
