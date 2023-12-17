@@ -817,7 +817,7 @@ def create_book(book_data, book_number, total_books):
     book.add_metadata('DC', 'publisher', 'fiction.live') # Set the publisher
     book.add_metadata('DC', 'identifier', f'url:https://fiction.live/stories//{book_data["_id"]}') # Add URL identifier
     book.add_metadata('DC', 'subject', 'Web Scraped') # Add Web Scraped tag
-    includeSpoilerTags = False
+    includeSpoilerTags = True
     if book_data.get("spoilerTags", []):
         book_data["ta"] = [tag for tag in book_data.get("ta", []) if tag not in book_data.get("spoilerTags", [])]
         if includeSpoilerTags:
