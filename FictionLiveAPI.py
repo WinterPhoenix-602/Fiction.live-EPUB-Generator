@@ -718,6 +718,22 @@ def format_images(img_elements):
                 f"Parsing for img tags failed--probably poor input HTML.  Skipping img({img})"
             )
 
+def download_and_add_to_book(book, item_list, item_type, file_prefix):
+    for count, item in enumerate(item_list):
+        item['content'] = getChapterText(item['url'])
+        if type(item['content']) != BeautifulSoup:
+            continue
+        remove_empty_tags(item['content'])
+        if img_elements := item['content'].find_all('img'):
+            format_images(img_elements)
+        item['content'] = item['content'].encode_contents()
+        epub_chapter = epub.EpubHtml(title=item['title'], file_name=f"{file_prefix}_{count+1}.xhtml", lang="en")
+        epub_chapter.content = item['content']
+        book.add_item(epub_chapter)
+        book.toc += (epub.Link(f"{file_prefix}_{count+1}.xhtml", item['title'], f"{item['title']}"),)
+        print_loading(f"{item_type} {count+1}/{len(item_list)} downloaded.")
+    return book
+
 def get_book_content(chapters_list, appendices_list, routes_list, book):
     """
     Downloads and adds chapters, appendices, and routes to the provided EPUB book.
@@ -757,9 +773,11 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         print("\nDownloading Appendices...")
         for count, appendix in enumerate(appendices_list):
             appendix['content'] = getChapterText(appendix['url'])
-            appendix['content'] = remove_empty_tags(appendix['content'])
             if type(appendix['content']) != BeautifulSoup:
                 continue
+            remove_empty_tags(appendix['content'])
+            if img_elements := appendix['content'].find_all('img'):
+                format_images(img_elements)
             appendix['content'] = appendix['content'].encode_contents()
             epub_chapter = epub.EpubHtml(title=appendix['title'], file_name=f"appendix_{count+1}.xhtml", lang="en")  # Create the chapter
             epub_chapter.content = appendix['content']  # Set the appendix content
@@ -773,6 +791,8 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
             if type(route['content']) != BeautifulSoup:
                 continue
             remove_empty_tags(route['content'])
+            if img_elements := route['content'].find_all('img'):
+                format_images(img_elements)
             route['content'] = route['content'].encode_contents()
             epub_chapter = epub.EpubHtml(title=route['title'], file_name=f"route_{count+1}.xhtml", lang="en")  # Create the chapter
             epub_chapter.content = route['content']  # Set the route content
@@ -878,7 +898,7 @@ def get_valid_directory():
         dir_path = input("Enter the directory where you want to save the EPUB file(s): ")
 
         if dir_path.lower() == 'def':
-            dir_path = r"C:\Users\caide\Desktop\Personal Projects\Epub Editing\Fiction.live\API"
+            dir_path = r"G:\My Drive\Ebooks\Fiction.live"
 
         if '"' in dir_path:
             dir_path = dir_path.strip('"')
