@@ -718,6 +718,14 @@ def format_images(img_elements):
                 f"Parsing for img tags failed--probably poor input HTML.  Skipping img({img})"
             )
 
+def add_title(title, chapter_content = BeautifulSoup()):
+    # Create a new tag to hold the chapter title
+    title_tag = chapter_content.new_tag('h3')  # 'h1' for large text
+    title_tag.string = title.strip()
+    title_tag['style'] = 'font-weight: bold; text-align: center;'  # Make the text bold and centered
+    # Add the title tag to the top of the chapter content
+    chapter_content.insert(0, title_tag)
+
 def download_and_add_to_book(book, item_list, item_type, file_prefix):
     for count, item in enumerate(item_list):
         item['content'] = getChapterText(item['url'])
@@ -726,6 +734,7 @@ def download_and_add_to_book(book, item_list, item_type, file_prefix):
         remove_empty_tags(item['content'])
         if img_elements := item['content'].find_all('img'):
             format_images(img_elements)
+        add_title(item['title'], item['content'])
         item['content'] = item['content'].encode_contents()
         epub_chapter = epub.EpubHtml(title=item['title'], file_name=f"{file_prefix}_{count+1}.xhtml", lang="en")
         epub_chapter.content = item['content']
@@ -755,50 +764,19 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         >>> get_book_content(chapters_list, appendices_list, routes_list, book)
         <epub.EpubBook object at 0x...>
     """
+    # Download Chapters
     print("Downloading Chapters...")
-    for count, chapter in enumerate(chapters_list):
-        chapter['content'] = getChapterText(chapter['url'])
-        if type(chapter['content']) != BeautifulSoup:
-            continue
-        remove_empty_tags(chapter['content'])
-        if img_elements := chapter['content'].find_all('img'):
-            format_images(img_elements)
-        chapter['content'] = chapter['content'].encode_contents()
-        epub_chapter = epub.EpubHtml(title=chapter['title'], file_name=f"chap_{count+1}.xhtml", lang="en")  # Create the chapter
-        epub_chapter.content = chapter['content']  # Set the chapter content
-        book.add_item(epub_chapter)  # Add formatted chapter to the book
-        book.toc += (epub.Link(f"chap_{count+1}.xhtml", chapter['title'], f"{chapter['title']}"),)  # Add the chapter to the table of contents
-        print_loading(f"Chapter {count+1}/{len(chapters_list)} downloaded.")
+    book = download_and_add_to_book(book, chapters_list, "Chapter", "chap")
+
+    # Download Appendices
     if appendices_list:
         print("\nDownloading Appendices...")
-        for count, appendix in enumerate(appendices_list):
-            appendix['content'] = getChapterText(appendix['url'])
-            if type(appendix['content']) != BeautifulSoup:
-                continue
-            remove_empty_tags(appendix['content'])
-            if img_elements := appendix['content'].find_all('img'):
-                format_images(img_elements)
-            appendix['content'] = appendix['content'].encode_contents()
-            epub_chapter = epub.EpubHtml(title=appendix['title'], file_name=f"appendix_{count+1}.xhtml", lang="en")  # Create the chapter
-            epub_chapter.content = appendix['content']  # Set the appendix content
-            book.add_item(epub_chapter)  # Add formatted appendix to the book
-            book.toc += (epub.Link(f"appendix_{count+1}.xhtml", appendix['title'], f"{appendix['title']}"),)  # Add the appendix to the table of contents
-            print_loading(f"Appendix {count+1}/{len(appendices_list)} downloaded.")
+        book = download_and_add_to_book(book, appendices_list, "Appendix", "appendix")
+
+    # Download Routes
     if routes_list:
         print("\nDownloading Routes...")
-        for count, route in enumerate(routes_list):
-            route['content'] = getChapterText(route['url'])
-            if type(route['content']) != BeautifulSoup:
-                continue
-            remove_empty_tags(route['content'])
-            if img_elements := route['content'].find_all('img'):
-                format_images(img_elements)
-            route['content'] = route['content'].encode_contents()
-            epub_chapter = epub.EpubHtml(title=route['title'], file_name=f"route_{count+1}.xhtml", lang="en")  # Create the chapter
-            epub_chapter.content = route['content']  # Set the route content
-            book.add_item(epub_chapter)  # Add formatted route to the book
-            book.toc += (epub.Link(f"route_{count+1}.xhtml", route['title'], f"{route['title']}"),)  # Add the route to the table of contents
-            print_loading(f"Route {count+1}/{len(routes_list)} downloaded.")
+        book = download_and_add_to_book(book, routes_list, "Route", "route")
     return book
 
 # Function to create the EPUB file
@@ -984,8 +962,10 @@ def main():  # sourcery skip: hoist-statement-from-loop
         EPUB file written to C:\Users\username\Desktop\Folder\story-1.epub"""
     # Get the URL(s) of the Table of Contents or Chapter
     story_urls = input("Enter Story URL(s): ")
-    #story_urls = "https://fiction.live/stories/Broodhive/irT23yRJJF4N2H5hr/home" # Testing url 1
-    #story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
+    if story_urls == "test1":
+        story_urls = "https://fiction.live/stories/Broodhive/irT23yRJJF4N2H5hr/home" # Testing url 1
+    elif story_urls == "test2":
+        story_urls = "https://fiction.live/stories/A-Hero-s-Journey/9jH3ggZgk9JdJWQWt" # Testing url 2
     story_urls = story_urls.split(" ") if " " in story_urls else [story_urls]
     # Check if the URL(s) is/are valid
     valid_urls = process_urls(story_urls)
