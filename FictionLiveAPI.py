@@ -798,7 +798,7 @@ def create_title_page(book_data, book, includeSpoilerTags, book_map):
                                     <b>Rating:</b> {book_data["contentRating"]}<br />
                                     {f'<b>Chapters:</b> {len(book_map[0])}<br />' if book_map[0] else ''}
                                     {f'<b>Appendices:</b> {len(book_map[1])}<br />' if book_map[1] else ''}
-                                    {f'<b>Routes:</b> {len(book_map[3])}<br />' if book_map[3] else ''}
+                                    {f'<b>Routes:</b> {len(book_map[2])}<br />' if book_map[2] else ''}
                                     <b>Words:</b> {book_data["w"]}<br />
                                     <b>Publisher:</b> fiction.live<br />
                                     {f'<b>Description:</b> {book_data["d"].strip()}<br />' if book_data.get('d') else ''}
@@ -810,6 +810,7 @@ def create_title_page(book_data, book, includeSpoilerTags, book_map):
                             </html>"""
     title_page.content = title_page_html.encode('utf-8') # Set the title page content
     book.add_item(title_page)
+    book.toc += (epub.Link("title.xhtml", 'Title Page', "Title Page"),)  # Add the title page to the table of contents
 
 # Function to create the EPUB file
 def create_book(book_data, book_number, total_books):
@@ -859,12 +860,11 @@ def create_book(book_data, book_number, total_books):
         book.add_metadata('DC', 'subject', tag) # Add tags
     
     chapters_list, appendices_list, routes_list = get_book_map(book_data)
-    book = create_title_page(book_data, book, includeSpoilerTags, [chapters_list, appendices_list, routes_list]) # Create the title page
+    create_title_page(book_data, book, includeSpoilerTags, [chapters_list, appendices_list, routes_list]) # Create the title page
 
     book.add_item(epub.EpubNav()) # Add the navigation
-    book.toc += (epub.Link("title.xhtml", 'Title Page', "Title Page"),)  # Add the title page to the table of contents
 
-    book = get_book_content(chapters_list, appendices_list, routes_list, book)
+    get_book_content(chapters_list, appendices_list, routes_list, book)
 
     book.spine = list(book.get_items()) # Set the spine to the list of chapters
     book.add_item(epub.EpubNcx()) # Add the table of contents
