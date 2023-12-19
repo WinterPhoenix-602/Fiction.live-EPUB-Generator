@@ -779,6 +779,38 @@ def get_book_content(chapters_list, appendices_list, routes_list, book):
         book = download_and_add_to_book(book, routes_list, "Route", "route")
     return book
 
+def create_title_page(book_data, book, includeSpoilerTags, book_map):
+    title_page = epub.EpubHtml(title="Title Page", file_name="title.xhtml", lang="en")
+    # Set the title page content from book properties
+    title_page_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
+                            <head>
+                                <title>{book_data["t"]} by {book_data['u'][0]['n']}</title>
+                                <link href="stylesheet.css" type="text/css" rel="stylesheet" />
+                            </head>
+                            <body class="fff_titlepage">
+                                <h3><a href="https://fiction.live/stories//{book_data["_id"]}">{book_data["t"]}</a> by <a class="authorlink"
+                                        href="https://fiction.live/user/{book_data['u'][0]['n']}">{book_data['u'][0]['n']}</a></h3>
+                                <div>
+                                    <b>Status:</b> {book_data["storyStatus"]}<br />
+                                    <b>Published:</b> {parse_timestamp(book_data["rt"])}<br />
+                                    <b>Updated:</b> {parse_timestamp(book_data["cht"])}<br />
+                                    <b>Packaged:</b> {datetime.now()}<br />
+                                    <b>Rating:</b> {book_data["contentRating"]}<br />
+                                    {f'<b>Chapters:</b> {len(book_map[0])}<br />' if book_map[0] else ''}
+                                    {f'<b>Appendices:</b> {len(book_map[1])}<br />' if book_map[1] else ''}
+                                    {f'<b>Routes:</b> {len(book_map[3])}<br />' if book_map[3] else ''}
+                                    <b>Words:</b> {book_data["w"]}<br />
+                                    <b>Publisher:</b> fiction.live<br />
+                                    {f'<b>Description:</b> {book_data["d"].strip()}<br />' if book_data.get('d') else ''}
+                                    {f'<b>Synopsis:</b> {book_data["b"].strip()}<br />' if book_data.get('b') else ''}
+                                    <b>Tags:</b> {", ".join(book_data["ta"])}<br />
+                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data.get("spoilerTags") and includeSpoilerTags else ''}
+                                </div>
+                            </body>
+                            </html>"""
+    title_page.content = title_page_html.encode('utf-8') # Set the title page content
+    book.add_item(title_page)
+
 # Function to create the EPUB file
 def create_book(book_data, book_number, total_books):
     """
@@ -826,41 +858,9 @@ def create_book(book_data, book_number, total_books):
     for tag in book_data["ta"]:
         book.add_metadata('DC', 'subject', tag) # Add tags
     
-
-    # Create the title page
-    title_page = epub.EpubHtml(title="Title Page", file_name="title.xhtml", lang="en")
-
     chapters_list, appendices_list, routes_list = get_book_map(book_data)
+    book = create_title_page(book_data, book, includeSpoilerTags, [chapters_list, appendices_list, routes_list]) # Create the title page
 
-    # Set the title page content from book properties
-    title_page_html = f"""<html xmlns="http://www.w3.org/1999/xhtml">
-                            <head>
-                                <title>{book_data["t"]} by {book_data['u'][0]['n']}</title>
-                                <link href="stylesheet.css" type="text/css" rel="stylesheet" />
-                            </head>
-                            <body class="fff_titlepage">
-                                <h3><a href="https://fiction.live/stories//{book_data["_id"]}">{book_data["t"]}</a> by <a class="authorlink"
-                                        href="https://fiction.live/user/{book_data['u'][0]['n']}">{book_data['u'][0]['n']}</a></h3>
-                                <div>
-                                    <b>Status:</b> {book_data["storyStatus"]}<br />
-                                    <b>Published:</b> {parse_timestamp(book_data["rt"])}<br />
-                                    <b>Updated:</b> {parse_timestamp(book_data["cht"])}<br />
-                                    <b>Packaged:</b> {datetime.now()}<br />
-                                    <b>Rating:</b> {book_data["contentRating"]}<br />
-                                    {f'<b>Chapters:</b> {len(chapters_list)}<br />' if chapters_list else ''}
-                                    {f'<b>Appendices:</b> {len(appendices_list)}<br />' if appendices_list else ''}
-                                    {f'<b>Routes:</b> {len(routes_list)}<br />' if routes_list else ''}
-                                    <b>Words:</b> {book_data["w"]}<br />
-                                    <b>Publisher:</b> fiction.live<br />
-                                    {f'<b>Description:</b> {book_data["d"].strip()}<br />' if book_data.get('d') else ''}
-                                    {f'<b>Synopsis:</b> {book_data["b"].strip()}<br />' if book_data.get('b') else ''}
-                                    <b>Tags:</b> {", ".join(book_data["ta"])}<br />
-                                    {f'<b>Spoiler Tags:</b> {", ".join(book_data["spoilerTags"])}<br />' if book_data.get("spoilerTags") and includeSpoilerTags else ''}
-                                </div>
-                            </body>
-                            </html>"""
-    title_page.content = title_page_html.encode('utf-8') # Set the title page content
-    book.add_item(title_page)
     book.add_item(epub.EpubNav()) # Add the navigation
     book.toc += (epub.Link("title.xhtml", 'Title Page', "Title Page"),)  # Add the title page to the table of contents
 
