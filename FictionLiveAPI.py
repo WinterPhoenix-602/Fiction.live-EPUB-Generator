@@ -876,7 +876,7 @@ def get_valid_directory():
         dir_path = input("Enter the directory where you want to save the EPUB file(s): ")
 
         if dir_path.lower() == 'def':
-            dir_path = r"C:\Users\caide\Desktop\Personal Projects\Epub Editing\Fiction.live\API"
+            dir_path = r"D:\clwil\Documents\Personal Projects\Epub Editing\Fiction.live\API"
 
         if '"' in dir_path:
             dir_path = dir_path.strip('"')
