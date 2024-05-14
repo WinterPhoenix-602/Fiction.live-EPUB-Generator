@@ -19,21 +19,6 @@ achievements = []
 ALERT_SOUND_PATH = r"Sound\alert.wav"
 SUCCESS_SOUND_PATH = r"Sound\success.wav"
 
-# TODO: Figure out why this closes the program
-def play_sound(sound_file):
-    """
-    Plays a sound file.
-
-    Args:
-        sound_file (str): The path to the sound file.
-
-    Returns:
-        None
-    """
-    wave_obj = sa.WaveObject.from_wave_file(sound_file)
-    play_obj = wave_obj.play()
-    play_obj.wait_done()  # Wait for sound to finish playing
-
 def process_urls(urls):
     """
     Validates a list of URLs and returns the valid ones along with their corresponding metadata URLs.
