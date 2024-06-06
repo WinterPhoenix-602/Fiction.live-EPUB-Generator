@@ -892,7 +892,7 @@ def save_book(book, dir_path):
     #play_sound(SUCCESS_SOUND_PATH)
 
 def validate_filename(book, dir_path, epub_path, book_title):
-    invalid_chars = set(string.punctuation.replace('_', ''))
+    invalid_chars = set(string.punctuation.replace('_', '')) | {'\n', '\r'}
     if any(char in invalid_chars for char in book_title):
         print(f"\n{Fore.YELLOW}The book title contains invalid characters. Invalid characters will be replaced with '-'{Style.RESET_ALL}\r")
         new_title = "".join(["-" if char in invalid_chars else char for char in book_title])
