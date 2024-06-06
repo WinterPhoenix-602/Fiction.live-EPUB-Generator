@@ -48,7 +48,7 @@ python fiction_live_epub_generator.py
 
 2. Enter the story URL(s) when prompted.
 
-3. Specify the directory to save the EPUB file(s).
+3. Specify the directory to save the EPUB file(s). (You may edit the script to include a default directory, which can then be accessed by entering 'def' when prompted for a directory.)
 
 4. The script will generate EPUB files for each provided URL and save them to the specified directory.
 
